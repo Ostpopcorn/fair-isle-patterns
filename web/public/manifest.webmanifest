@@ -1,0 +1,13 @@
+{
+  "name": "Fair Isle Pattern Builder",
+  "short_name": "Fair Isle",
+  "description": "Design stranded fair isle bands knitted in the round.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f3ec",
+  "theme_color": "#8a3b26",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

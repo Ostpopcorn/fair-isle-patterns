@@ -1,0 +1,369 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import type { Motif } from '../../core/types';
+import { bandsUsingMotif, findMapping, updateMotif } from '../../model/doc';
+import * as M from '../../model/motif';
+import { store, type AppState, type Tool } from '../../state/store';
+import { NumberField, paintMotif, symbolColors } from '../components/common';
+import { motifCommands } from './motifCommands';
+import { zoomBus } from '../shortcuts';
+
+const TOOLS: { id: Tool; label: string; key: string; icon: string }[] = [
+  { id: 'pencil', label: 'Pencil', key: 'P', icon: '✎' },
+  { id: 'fill', label: 'Fill', key: 'F', icon: '◧' },
+  { id: 'line', label: 'Line', key: 'L', icon: '╱' },
+  { id: 'rect', label: 'Rectangle', key: 'R', icon: '▭' },
+  { id: 'select', label: 'Select', key: 'S', icon: '⬚' },
+];
+
+const SYMBOLS: { id: M.Symbol; label: string }[] = [
+  { id: '0', label: 'Background' },
+  { id: '1', label: 'Foreground' },
+  { id: '2', label: 'Accent' },
+];
+
+let strokeCounter = 0;
+
+export function MotifEditor({ s }: { s: AppState }) {
+  const motif = s.doc.motifs.find((m) => m.id === s.ui.motifId);
+  if (!motif) {
+    return (
+      <div class="panel">
+        <div class="empty">Pick a motif in the Motifs tab, or create one, to edit it here.</div>
+      </div>
+    );
+  }
+  return <Editor s={s} motif={motif} />;
+}
+
+function Editor({ s, motif }: { s: AppState; motif: Motif }) {
+  const rows = motif.rows;
+  const w = M.width(rows);
+  const h = M.height(rows);
+  const ui = s.ui;
+  const hostRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [fit, setFit] = useState({ w: 600, h: 400 });
+  const [zoom, setZoom] = useState(1);
+  const [hover, setHover] = useState<M.Cell | null>(null);
+  const [preview, setPreview] = useState<M.Cell[] | null>(null);
+  const drag = useRef<{ anchor: M.Cell; last: M.Cell; symbol: M.Symbol; key: string } | null>(null);
+
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setFit({ w: el.clientWidth - 32, h: el.clientHeight - 32 }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onZoom = (e: Event) => {
+      const d = (e as CustomEvent).detail;
+      setZoom((z) => (d === 'fit' ? 1 : d === 'in' ? Math.min(4, z * 1.25) : Math.max(0.25, z / 1.25)));
+    };
+    zoomBus.addEventListener('zoom', onZoom);
+    return () => zoomBus.removeEventListener('zoom', onZoom);
+  }, []);
+
+  const baseCell = Math.max(6, Math.min(40, Math.floor(Math.min(fit.w / Math.max(1, w), fit.h / Math.max(1, h)))));
+  const cell = Math.max(3, Math.round(baseCell * zoom));
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * cell * dpr;
+    canvas.height = h * cell * dpr;
+    canvas.style.width = `${w * cell}px`;
+    canvas.style.height = `${h * cell}px`;
+    const ctx = canvas.getContext('2d')!;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const colors = symbolColors();
+    const previewSet = new Set(preview?.map((c) => `${c.x},${c.y}`));
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const sym = previewSet.has(`${x},${y}`) ? (drag.current?.symbol ?? ui.symbol) : rows[y][x];
+        ctx.fillStyle = colors[Number(sym)] ?? '#f0f';
+        ctx.fillRect(x * cell, (h - 1 - y) * cell, cell, cell);
+      }
+    }
+    ctx.strokeStyle = 'rgba(128,128,128,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= w; x++) {
+      ctx.moveTo(x * cell + 0.5, 0);
+      ctx.lineTo(x * cell + 0.5, h * cell);
+    }
+    for (let y = 0; y <= h; y++) {
+      ctx.moveTo(0, y * cell + 0.5);
+      ctx.lineTo(w * cell, y * cell + 0.5);
+    }
+    ctx.stroke();
+    // Centre lines for mirrored drawing.
+    ctx.strokeStyle = colors[2];
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    if (ui.mirrorV) {
+      ctx.moveTo((w * cell) / 2, 0);
+      ctx.lineTo((w * cell) / 2, h * cell);
+    }
+    if (ui.mirrorH) {
+      ctx.moveTo(0, (h * cell) / 2);
+      ctx.lineTo(w * cell, (h * cell) / 2);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (ui.selection) {
+      const r = ui.selection;
+      ctx.strokeStyle = '#2f6fd6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 3]);
+      ctx.strokeRect(r.x0 * cell + 1, (h - 1 - r.y1) * cell + 1, (r.x1 - r.x0 + 1) * cell - 2, (r.y1 - r.y0 + 1) * cell - 2);
+      ctx.setLineDash([]);
+    }
+    if (hover) {
+      ctx.strokeStyle = '#2f6fd6';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(hover.x * cell + 1, (h - 1 - hover.y) * cell + 1, cell - 2, cell - 2);
+    }
+  });
+
+  const cellFromEvent = (e: PointerEvent): M.Cell | null => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / cell);
+    const sy = Math.floor((e.clientY - rect.top) / cell);
+    if (x < 0 || x >= w || sy < 0 || sy >= h) return null;
+    return { x, y: h - 1 - sy };
+  };
+
+  const clamp = (c: M.Cell): M.Cell => ({ x: Math.max(0, Math.min(w - 1, c.x)), y: Math.max(0, Math.min(h - 1, c.y)) });
+  const looseCell = (e: PointerEvent): M.Cell => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return clamp({ x: Math.floor((e.clientX - rect.left) / cell), y: h - 1 - Math.floor((e.clientY - rect.top) / cell) });
+  };
+
+  const withMirrors = (cells: M.Cell[]) => cells.flatMap((c) => M.mirrored(c, w, h, ui.mirrorV, ui.mirrorH));
+
+  const paint = (cells: M.Cell[], symbol: M.Symbol, key: string) => {
+    const id = motif.id;
+    store.edit((doc) => updateMotif(doc, id, (m) => {
+      const next = M.setCells(m.rows, withMirrors(cells), symbol);
+      return next.join('\n') === m.rows.join('\n') ? m : { ...m, rows: next };
+    }), { coalesce: key });
+  };
+
+  const onDown = (e: PointerEvent) => {
+    const c = cellFromEvent(e);
+    if (!c || s.readOnly) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    const symbol: M.Symbol = e.button === 2 ? '0' : ui.symbol;
+    const key = `stroke-${++strokeCounter}`;
+    drag.current = { anchor: c, last: c, symbol, key };
+    if (ui.tool === 'pencil') paint([c], symbol, key);
+    else if (ui.tool === 'fill') {
+      const regions = withMirrors([c]).flatMap((start) => M.floodRegion(rows, start));
+      store.edit((doc) => updateMotif(doc, motif.id, (m) => ({ ...m, rows: M.setCells(m.rows, regions, symbol) })), { coalesce: key });
+      drag.current = null;
+    } else if (ui.tool === 'select') store.ui({ selection: M.normalizeRect(c, c) });
+    else setPreview(withMirrors(ui.tool === 'line' ? M.lineCells(c, c) : M.rectCells(c, c, ui.filledRect)));
+  };
+
+  const onMove = (e: PointerEvent) => {
+    const c = cellFromEvent(e);
+    setHover(c);
+    const d = drag.current;
+    if (!d) return;
+    const loose = looseCell(e);
+    if (ui.tool === 'pencil') {
+      if (c && (c.x !== d.last.x || c.y !== d.last.y)) {
+        paint(M.lineCells(d.last, c), d.symbol, d.key);
+        d.last = c;
+      }
+    } else if (ui.tool === 'select') {
+      store.ui({ selection: M.normalizeRect(d.anchor, loose) });
+    } else if (ui.tool === 'line') {
+      setPreview(withMirrors(M.lineCells(d.anchor, loose)));
+    } else if (ui.tool === 'rect') {
+      setPreview(withMirrors(M.rectCells(d.anchor, loose, ui.filledRect)));
+    }
+    d.last = loose;
+  };
+
+  const onUp = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    if ((ui.tool === 'line' || ui.tool === 'rect') && preview) {
+      const cells = preview;
+      store.edit((doc) => updateMotif(doc, motif.id, (m) => ({ ...m, rows: M.setCells(m.rows, cells, d.symbol) })));
+    }
+    setPreview(null);
+    store.breakCoalescing();
+  };
+
+  const users = bandsUsingMotif(s.doc, motif.id);
+  const square = w === h;
+
+  return (
+    <div class="motif-editor">
+      <div class="motif-tools">
+        <div class="toolbar" role="toolbar" aria-label="Motif tools">
+          <div class="seg" role="radiogroup" aria-label="Tool">
+            {TOOLS.map((t) => (
+              <button
+                key={t.id}
+                role="radio"
+                aria-checked={ui.tool === t.id}
+                aria-pressed={ui.tool === t.id}
+                title={`${t.label} (${t.key})`}
+                onClick={() => store.ui({ tool: t.id, selection: t.id === 'select' ? ui.selection : null })}
+              >
+                <span aria-hidden="true">{t.icon}</span> <span class="small">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Symbol">
+            {SYMBOLS.map((sym) => (
+              <button
+                key={sym.id}
+                role="radio"
+                aria-checked={ui.symbol === sym.id}
+                aria-pressed={ui.symbol === sym.id}
+                title={`${sym.label} (${sym.id})`}
+                onClick={() => store.ui({ symbol: sym.id })}
+              >
+                <span class="sym" style={{ background: `var(${['--sym-bg', '--sym-fg', '--sym-accent'][Number(sym.id)]})` }} /> {sym.label}
+              </button>
+            ))}
+          </div>
+          {ui.tool === 'rect' && (
+            <label class="check small">
+              <input type="checkbox" checked={ui.filledRect} onChange={() => store.ui({ filledRect: !ui.filledRect })} /> Filled
+            </label>
+          )}
+        </div>
+        <div class="toolbar">
+          <span class="group">
+            <button class="btn small" aria-pressed={ui.mirrorV} title="Mirror across the vertical centre line (M)" onClick={() => store.ui({ mirrorV: !ui.mirrorV })}>
+              ⇆ Mirror
+            </button>
+            <button class="btn small" aria-pressed={ui.mirrorH} title="Mirror across the horizontal centre line (Shift+M)" onClick={() => store.ui({ mirrorH: !ui.mirrorH })}>
+              ⇅ Mirror
+            </button>
+          </span>
+          <span class="group">
+            <button class="btn small icon" title="Flip horizontally (Shift+H)" aria-label="Flip horizontally" onClick={() => motifCommands.transform('flipH')}>
+              ⇋
+            </button>
+            <button class="btn small icon" title="Flip vertically (Shift+V)" aria-label="Flip vertically" onClick={() => motifCommands.transform('flipV')}>
+              ⥮
+            </button>
+            <button class="btn small icon" title="Rotate 180° (Shift+T)" aria-label="Rotate 180 degrees" onClick={() => motifCommands.transform('rot180')}>
+              ↻
+            </button>
+            <button class="btn small" disabled={!square} title={square ? 'Rotate 90° clockwise (])' : 'Rotating by 90° needs a square motif'} onClick={() => motifCommands.transform('rot90cw')}>
+              90°
+            </button>
+          </span>
+          <span class="group" aria-label="Roll contents">
+            {(
+              [
+                ['←', -1, 0, 'left'],
+                ['→', 1, 0, 'right'],
+                ['↑', 0, 1, 'up'],
+                ['↓', 0, -1, 'down'],
+              ] as const
+            ).map(([icon, dx, dy, dir]) => (
+              <button key={dir} class="btn small icon" title={`Roll ${dir} with wrap-around (Alt+Arrow)`} aria-label={`Roll ${dir}`} onClick={() => motifCommands.roll(dx, dy)}>
+                {icon}
+              </button>
+            ))}
+          </span>
+          <span class="group">
+            <button class="btn small" title="Copy (Ctrl+C)" onClick={() => motifCommands.copy()}>
+              Copy
+            </button>
+            <button class="btn small" title="Cut (Ctrl+X)" disabled={!ui.selection} onClick={() => motifCommands.cut()}>
+              Cut
+            </button>
+            <button class="btn small" title="Paste (Ctrl+V)" disabled={!s.clipboard} onClick={() => motifCommands.paste()}>
+              Paste
+            </button>
+          </span>
+          <span class="row small">
+            <NumberField ariaLabel="Motif width" value={w} min={1} max={200} width="64px" onChange={(v) => resize(motif, v, h)} />
+            ×
+            <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(motif, w, v)} />
+          </span>
+        </div>
+      </div>
+      <div class="motif-stage">
+        <div class="motif-canvas" ref={hostRef}>
+          <canvas
+            ref={canvasRef}
+            role="img"
+            aria-label={`Motif ${motif.id}, ${w} by ${h} cells`}
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            onPointerLeave={() => setHover(null)}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        </div>
+        <TilePreview s={s} motif={motif} />
+      </div>
+      <div class="hud" aria-live="polite">
+        {hover ? `Column ${hover.x + 1} from the left, row ${hover.y + 1} · ` : ''}
+        {w} × {h} · used by {users.length} band{users.length === 1 ? '' : 's'}
+      </div>
+    </div>
+  );
+}
+
+function resize(motif: Motif, w: number, h: number): void {
+  if (!Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > 200 || h > 200) return;
+  store.edit((doc) => updateMotif(doc, motif.id, (m) => ({ ...m, rows: M.resize(m.rows, w, h) })), { coalesce: `resize-${motif.id}` });
+  store.ui({ selection: null });
+}
+
+function TilePreview({ s, motif }: { s: AppState; motif: Motif }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const used = s.doc.bands.find((b) => b.motif === motif.id)?.mapping;
+  // previewMapping: null picks automatically, '' means symbols only.
+  const mappingId =
+    s.ui.previewMapping === ''
+      ? null
+      : findMapping(s.doc, s.ui.previewMapping)
+        ? s.ui.previewMapping
+        : (used ?? s.doc.mappings[0]?.id ?? null);
+  const mapping = findMapping(s.doc, mappingId);
+  const w = M.width(motif.rows);
+  const across = Math.max(3, Math.ceil(24 / Math.max(1, w)));
+  const cell = Math.max(2, Math.min(16, Math.floor(320 / Math.max(1, w * across))));
+  useLayoutEffect(() => {
+    if (ref.current) paintMotif(ref.current, motif.rows, { cell, mapping, doc: s.doc, grayscale: s.ui.grayscale, across, up: 2 });
+  });
+  return (
+    <aside class="tile-preview" aria-label="Tiled preview">
+      <h3>Tiled preview</h3>
+      <label class="field">
+        <span>Colour with mapping</span>
+        <select value={mappingId ?? ''} onChange={(e) => store.ui({ previewMapping: (e.currentTarget as HTMLSelectElement).value })}>
+          <option value="">Symbols only</option>
+          {s.doc.mappings.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name ? `${m.name} (${m.id})` : m.id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <canvas ref={ref} role="img" aria-label={`${across} by 2 repeats of the motif`} />
+      <p class="small muted">
+        {across} × 2 repeats{mapping ? `, coloured row by row with “${mapping.id}”` : ''}. Right-click draws background.
+      </p>
+    </aside>
+  );
+}

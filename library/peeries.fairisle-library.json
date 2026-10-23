@@ -1,0 +1,69 @@
+{
+  "format": "fairisle-library",
+  "version": 1,
+  "meta": { "name": "Peeries", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Small peerie bands of 1 to 7 rows, and a plain spacer. Every float is at most 4 stitches." },
+  "palette": [],
+  "motifs": [
+    { "id": "spacer", "name": "Spacer", "rows": [
+      "0"
+    ] },
+    { "id": "seed", "name": "Seed", "rows": [
+      "10",
+      "01"
+    ] },
+    { "id": "lice", "name": "Lice", "rows": [
+      "1000",
+      "0000",
+      "0010",
+      "0000"
+    ] },
+    { "id": "checks", "name": "Checks", "rows": [
+      "1100",
+      "0011"
+    ] },
+    { "id": "zigzag", "name": "Zigzag", "rows": [
+      "1000",
+      "0101",
+      "0010"
+    ] },
+    { "id": "crosses", "name": "Crosses", "rows": [
+      "0100",
+      "1110",
+      "0100"
+    ] },
+    { "id": "peerie-x", "name": "Peerie X", "rows": [
+      "100001",
+      "010010",
+      "001100",
+      "010010",
+      "100001"
+    ] },
+    { "id": "diamond", "name": "Diamond", "rows": [
+      "001100",
+      "011110",
+      "110011",
+      "011110",
+      "001100"
+    ] },
+    { "id": "fir-tree", "name": "Fir tree", "rows": [
+      "001100",
+      "111111",
+      "011110",
+      "001100"
+    ] },
+    { "id": "blocks", "name": "Blocks", "rows": [
+      "11110000",
+      "00001111"
+    ] },
+    { "id": "ovals", "name": "Ovals", "rows": [
+      "001100",
+      "010010",
+      "100001",
+      "100001",
+      "100001",
+      "010010",
+      "001100"
+    ] }
+  ],
+  "mappings": []
+}
