@@ -1,0 +1,22 @@
+{
+  "description": "A motif over 200×200 and more than 1000 chart rows",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "motif": "wide"
+      },
+      "detail": "201×1"
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "bands"
+      },
+      "detail": "1200 chart rows"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "description": "A file with a higher version than supported opens read-only",
+  "roundtrip": true,
+  "read_only": true,
+  "issues": []
+}

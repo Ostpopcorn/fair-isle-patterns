@@ -1,0 +1,32 @@
+{
+  "description": "Unknown fields are reported as W106 notices and written back on save, after the known fields and sorted by key",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
+        "motif": "dot",
+        "path": "motifs[0].x-note"
+      },
+      "detail": "motifs[0].x-note"
+    },
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
+        "band": 0,
+        "path": "bands[0].comment"
+      },
+      "detail": "bands[0].comment"
+    },
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
+        "path": "x-editor"
+      },
+      "detail": "x-editor"
+    }
+  ]
+}

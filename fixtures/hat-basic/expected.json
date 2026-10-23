@@ -1,0 +1,92 @@
+{
+  "description": "The hat example from section 4: 120 stitches, 13 rows (peerie rows 1–5, spacer row 6, flower rows 7–11, spacer rows 12–13)",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 7,
+        "color": "rust"
+      },
+      "detail": "rust float of 7"
+    },
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 8,
+        "color": "rust"
+      },
+      "detail": "rust float of 5"
+    },
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 9,
+        "color": "cream"
+      },
+      "detail": "cream float of 5"
+    },
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 9,
+        "color": "gold"
+      },
+      "detail": "gold float of 7"
+    },
+    {
+      "code": "W102",
+      "severity": "warning",
+      "location": {
+        "row": 9
+      },
+      "detail": "3 colours (cream, rust, gold)"
+    },
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 10,
+        "color": "rust"
+      },
+      "detail": "rust float of 5"
+    },
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 11,
+        "color": "rust"
+      },
+      "detail": "rust float of 7"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "c": "cream",
+      "n": "navy",
+      "r": "rust",
+      "g": "gold"
+    },
+    "rows": [
+      "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "rcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrccccccc",
+      "rrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccr",
+      "grrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrrgrrcccrr",
+      "rrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccrrrcccccr",
+      "rcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrcccccccrccccccc",
+      "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "nccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccn",
+      "crccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrc",
+      "ccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggccccggcc",
+      "crccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrccrc",
+      "nccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccnnccccn"
+    ]
+  },
+  "suggest_cast_on": []
+}

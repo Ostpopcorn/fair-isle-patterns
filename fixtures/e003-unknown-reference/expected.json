@@ -1,0 +1,34 @@
+{
+  "description": "Unknown references: band to motif, band to mapping, mapping row to palette colour",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "mapping": "ax",
+        "mappingRow": 1,
+        "color": "x"
+      },
+      "detail": "\"x\""
+    },
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "band": 0,
+        "motif": "star"
+      },
+      "detail": "\"star\""
+    },
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "band": 1,
+        "mapping": "zz"
+      },
+      "detail": "\"zz\""
+    }
+  ]
+}

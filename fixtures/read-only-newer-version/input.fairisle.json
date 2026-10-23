@@ -1,0 +1,25 @@
+{
+  "format": "fairisle-pattern",
+  "version": 2,
+  "meta": { "name": "From the future" },
+  "gauge": { "stitches": 28, "rows": 32, "per_cm": 10 },
+  "cast_on": 2,
+  "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
+  "palette": [
+    { "id": "a", "hex": "#f2efe8", "name": "Light" },
+    { "id": "b", "hex": "#24283b", "name": "Dark" }
+  ],
+  "motifs": [
+    { "id": "dot", "rows": [
+      "01"
+    ] }
+  ],
+  "mappings": [
+    { "id": "ab", "rows": [
+      ["a", "b"]
+    ] }
+  ],
+  "bands": [
+    { "motif": "dot", "mapping": "ab", "offset": 0 }
+  ]
+}

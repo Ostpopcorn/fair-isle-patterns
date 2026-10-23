@@ -1,0 +1,14 @@
+{
+  "description": "F4: ABBBBA — The two A stitches meet across the ring, so A's float is 4",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "ABBBBA"
+    ]
+  }
+}

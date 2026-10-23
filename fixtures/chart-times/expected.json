@@ -1,0 +1,19 @@
+{
+  "description": "A 2-row motif repeated twice (times 2) with a 3-row mapping: the mapping keeps cycling across repeats instead of restarting",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "a": "a",
+      "b": "b",
+      "c": "c",
+      "d": "d"
+    },
+    "rows": [
+      "abab",
+      "dada",
+      "acac",
+      "baba"
+    ]
+  }
+}

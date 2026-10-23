@@ -1,0 +1,28 @@
+{
+  "description": "cast_on 10 with a 4-wide motif: the last repeat is cut off at the right edge (W103)",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W103",
+      "severity": "warning",
+      "location": {
+        "band": 0,
+        "motif": "four"
+      },
+      "detail": "Cast-on values that fit every band: 8 or 12"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "BAAABAAABA"
+    ]
+  },
+  "suggest_cast_on": [
+    8,
+    12
+  ]
+}

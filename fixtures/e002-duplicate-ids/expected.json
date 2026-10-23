@@ -1,0 +1,24 @@
+{
+  "description": "Duplicate ids within the palette and within the motifs",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E002",
+      "severity": "error",
+      "location": {
+        "color": "a",
+        "path": "palette[2].id"
+      },
+      "detail": "\"a\""
+    },
+    {
+      "code": "E002",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "path": "motifs[1].id"
+      },
+      "detail": "\"dot\""
+    }
+  ]
+}

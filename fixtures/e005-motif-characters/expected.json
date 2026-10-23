@@ -1,0 +1,24 @@
+{
+  "description": "Characters other than 0, 1 and 2, including '.', which is reserved for shaping",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E005",
+      "severity": "error",
+      "location": {
+        "motif": "shaped",
+        "motifRow": 1
+      },
+      "detail": "reserved"
+    },
+    {
+      "code": "E005",
+      "severity": "error",
+      "location": {
+        "motif": "shaped",
+        "motifRow": 2
+      },
+      "detail": "'3'"
+    }
+  ]
+}

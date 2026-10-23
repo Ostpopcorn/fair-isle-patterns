@@ -1,0 +1,16 @@
+{
+  "description": "Offset 7 and offset -3 on a 5-wide motif produce exactly the rows of offset 2; positive offsets slide the motif left",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "AAABAAAABA",
+      "AAABAAAABA",
+      "AAABAAAABA"
+    ]
+  }
+}

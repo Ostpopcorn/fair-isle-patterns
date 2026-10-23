@@ -1,0 +1,21 @@
+{
+  "format": "fairisle-pattern",
+  "version": 1,
+  "meta": { "name": "Missing fields" },
+  "cast_on": 2,
+  "palette": [
+    { "id": "a", "hex": "#f2efe8" },
+    { "id": "b", "hex": "#24283b" }
+  ],
+  "motifs": [
+    { "id": "dot", "rows": "01" }
+  ],
+  "mappings": [
+    { "id": "ab", "rows": [
+      ["a", "b"]
+    ] }
+  ],
+  "bands": [
+    { "motif": "dot", "offset": 0 }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Motif row 0120 with mapping row [cream, navy] produces E007 with the motif row, band and mapping row in its location",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E007",
+      "severity": "error",
+      "location": {
+        "band": 0,
+        "motif": "accent",
+        "mapping": "two",
+        "row": 1,
+        "motifRow": 1,
+        "mappingRow": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "description": "A motif whose rows differ in length, and a motif with no rows",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E004",
+      "severity": "error",
+      "location": {
+        "motif": "ragged",
+        "motifRow": 2
+      },
+      "detail": "row 2"
+    },
+    {
+      "code": "E004",
+      "severity": "error",
+      "location": {
+        "motif": "empty"
+      },
+      "detail": "no rows"
+    }
+  ]
+}

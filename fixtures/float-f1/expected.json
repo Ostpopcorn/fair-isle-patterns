@@ -1,0 +1,14 @@
+{
+  "description": "F1: ABABAB — All floats are 1",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "ABABAB"
+    ]
+  }
+}

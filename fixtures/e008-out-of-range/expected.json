@@ -1,0 +1,60 @@
+{
+  "description": "Out-of-range values: hex not #rrggbb, gauge ≤ 0, cast_on outside 1–1000, invalid id, non-integer offset, times < 1, float_notice greater than float_warning",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "gauge.stitches"
+      }
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "cast_on"
+      }
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "settings.float_notice"
+      }
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "palette[1].id",
+        "color": "B"
+      }
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "palette[0].hex",
+        "color": "a"
+      },
+      "detail": "#fff"
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "bands[0].offset",
+        "band": 0
+      }
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "bands[1].times",
+        "band": 1
+      }
+    }
+  ]
+}

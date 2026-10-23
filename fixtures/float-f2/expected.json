@@ -1,0 +1,30 @@
+{
+  "description": "F2: AAAAAAAAAB — B appears once in 10 stitches",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "warning",
+      "location": {
+        "row": 1,
+        "color": "b",
+        "runs": [
+          {
+            "start": 2,
+            "length": 9
+          }
+        ]
+      },
+      "detail": "b float of 9"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "AAAAAAAAAB"
+    ]
+  }
+}

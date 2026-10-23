@@ -1,0 +1,11 @@
+{
+  "format": "fairisle-pattern",
+  "version": 1,
+  "meta": {"name": "Defaults"},
+  "gauge": {"stitches": 24, "rows": 30},
+  "cast_on": 2,
+  "palette": [{"id": "a", "hex": "#f2efe8"}, {"id": "b", "hex": "#24283b"}],
+  "motifs": [{"id": "dot", "rows": ["01"]}],
+  "mappings": [{"id": "ab", "rows": [["a", "b"]]}],
+  "bands": [{"motif": "dot", "mapping": "ab"}, {"motif": "dot", "mapping": "ab", "times": 1}, {"times": 3, "mapping": "ab", "motif": "dot"}]
+}

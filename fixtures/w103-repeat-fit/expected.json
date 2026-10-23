@@ -1,0 +1,28 @@
+{
+  "description": "cast_on 124 with motif widths 6 and 8 suggests 120 or 144",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W103",
+      "severity": "warning",
+      "location": {
+        "band": 0,
+        "motif": "six"
+      },
+      "detail": "120 or 144"
+    },
+    {
+      "code": "W103",
+      "severity": "warning",
+      "location": {
+        "band": 1,
+        "motif": "eight"
+      },
+      "detail": "120 or 144"
+    }
+  ],
+  "suggest_cast_on": [
+    120,
+    144
+  ]
+}

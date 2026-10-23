@@ -1,0 +1,30 @@
+{
+  "description": "F8: ABBBBBBBBA — Lower edge of the warning range",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "warning",
+      "location": {
+        "row": 1,
+        "color": "a",
+        "runs": [
+          {
+            "start": 2,
+            "length": 8
+          }
+        ]
+      },
+      "detail": "a float of 8"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "ABBBBBBBBA"
+    ]
+  }
+}

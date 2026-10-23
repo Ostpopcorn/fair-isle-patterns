@@ -1,0 +1,32 @@
+{
+  "description": "A mapping with no rows, and rows with more than 3 or fewer than 2 entries",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "mapping": "none"
+      },
+      "detail": "no rows"
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "mapping": "wide",
+        "mappingRow": 2
+      },
+      "detail": "4 entries"
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "mapping": "wide",
+        "mappingRow": 3
+      },
+      "detail": "1 entry"
+    }
+  ]
+}

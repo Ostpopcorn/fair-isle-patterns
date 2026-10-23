@@ -1,0 +1,30 @@
+{
+  "description": "F7: ABBBBBBBA — Upper edge of the notice range",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 1,
+        "color": "a",
+        "runs": [
+          {
+            "start": 2,
+            "length": 7
+          }
+        ]
+      },
+      "detail": "a float of 7"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "ABBBBBBBA"
+    ]
+  }
+}

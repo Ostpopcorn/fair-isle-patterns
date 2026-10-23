@@ -1,0 +1,30 @@
+{
+  "description": "F6: ABBBBBA — Lower edge of the notice range",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 1,
+        "color": "a",
+        "runs": [
+          {
+            "start": 2,
+            "length": 5
+          }
+        ]
+      },
+      "detail": "a float of 5"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "ABBBBBA"
+    ]
+  }
+}

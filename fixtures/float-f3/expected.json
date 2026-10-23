@@ -1,0 +1,30 @@
+{
+  "description": "F3: BBAAAAAABB — A's float wraps around the ring (stitches 9, 10, 1, 2) and is only 4",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 1,
+        "color": "b",
+        "runs": [
+          {
+            "start": 3,
+            "length": 6
+          }
+        ]
+      },
+      "detail": "b float of 6"
+    }
+  ],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "BBAAAAAABB"
+    ]
+  }
+}

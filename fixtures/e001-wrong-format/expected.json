@@ -1,0 +1,11 @@
+{
+  "description": "format is wrong",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "detail": "format"
+    }
+  ]
+}

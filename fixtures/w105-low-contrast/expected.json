@@ -1,0 +1,24 @@
+{
+  "description": "Cream and beige are close in lightness: rows 1 and 3 of the mapping get W105 (row 3 through its accent)",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W105",
+      "severity": "notice",
+      "location": {
+        "mapping": "soft",
+        "mappingRow": 1
+      },
+      "detail": "foreground beige"
+    },
+    {
+      "code": "W105",
+      "severity": "notice",
+      "location": {
+        "mapping": "soft",
+        "mappingRow": 3
+      },
+      "detail": "accent beige"
+    }
+  ]
+}

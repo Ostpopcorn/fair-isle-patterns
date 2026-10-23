@@ -1,0 +1,24 @@
+{
+  "description": "A library mapping may only reference palette colours in the same file; bands are unknown in a library",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
+        "path": "bands"
+      },
+      "detail": "bands"
+    },
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "mapping": "two-colour",
+        "mappingRow": 1,
+        "color": "red"
+      },
+      "detail": "\"red\""
+    }
+  ]
+}

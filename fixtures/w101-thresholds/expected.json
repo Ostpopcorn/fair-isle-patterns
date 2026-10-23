@@ -1,0 +1,40 @@
+{
+  "description": "float_notice 3 and float_warning 4: row 1 has two floats of 3 (notice), row 2 one float of 7 (warning)",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W101",
+      "severity": "notice",
+      "location": {
+        "row": 1,
+        "color": "b",
+        "runs": [
+          {
+            "start": 1,
+            "length": 3
+          },
+          {
+            "start": 5,
+            "length": 3
+          }
+        ]
+      },
+      "detail": "b float of 3"
+    },
+    {
+      "code": "W101",
+      "severity": "warning",
+      "location": {
+        "row": 2,
+        "color": "b",
+        "runs": [
+          {
+            "start": 1,
+            "length": 7
+          }
+        ]
+      },
+      "detail": "b float of 7"
+    }
+  ]
+}

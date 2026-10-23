@@ -1,0 +1,14 @@
+{
+  "description": "version is not an integer",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "path": "version"
+      },
+      "detail": "version"
+    }
+  ]
+}

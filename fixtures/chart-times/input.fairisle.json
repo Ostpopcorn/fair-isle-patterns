@@ -1,0 +1,30 @@
+{
+  "format": "fairisle-pattern",
+  "version": 1,
+  "meta": { "name": "Times" },
+  "gauge": { "stitches": 28, "rows": 32, "per_cm": 10 },
+  "cast_on": 4,
+  "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
+  "palette": [
+    { "id": "a", "hex": "#f5f5f5" },
+    { "id": "b", "hex": "#222222" },
+    { "id": "c", "hex": "#8b0000" },
+    { "id": "d", "hex": "#00008b" }
+  ],
+  "motifs": [
+    { "id": "check", "rows": [
+      "10",
+      "01"
+    ] }
+  ],
+  "mappings": [
+    { "id": "three", "rows": [
+      ["a", "b"],
+      ["a", "c"],
+      ["a", "d"]
+    ] }
+  ],
+  "bands": [
+    { "motif": "check", "mapping": "three", "offset": 0, "times": 2 }
+  ]
+}

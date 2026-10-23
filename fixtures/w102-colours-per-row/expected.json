@@ -1,0 +1,15 @@
+{
+  "description": "Three colours in one row with the default limit of 2",
+  "roundtrip": true,
+  "issues": [
+    {
+      "code": "W102",
+      "severity": "warning",
+      "location": {
+        "row": 1,
+        "band": 0
+      },
+      "detail": "3 colours (a, b, c)"
+    }
+  ]
+}

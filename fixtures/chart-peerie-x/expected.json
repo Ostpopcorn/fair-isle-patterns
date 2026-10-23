@@ -1,0 +1,21 @@
+{
+  "description": "Section 5 test format example: peerie-x with sunset, cast_on 12",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "c": "cream",
+      "n": "navy",
+      "r": "rust",
+      "g": "gold"
+    },
+    "rows": [
+      "nccccnnccccn",
+      "crccrccrccrc",
+      "ccggccccggcc",
+      "crccrccrccrc",
+      "nccccnnccccn"
+    ]
+  },
+  "suggest_cast_on": []
+}

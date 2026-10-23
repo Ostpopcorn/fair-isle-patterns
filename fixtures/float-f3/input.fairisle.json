@@ -1,0 +1,25 @@
+{
+  "format": "fairisle-pattern",
+  "version": 1,
+  "meta": { "name": "Float case F3" },
+  "gauge": { "stitches": 28, "rows": 32, "per_cm": 10 },
+  "cast_on": 10,
+  "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
+  "palette": [
+    { "id": "a", "hex": "#f2efe8", "name": "Light" },
+    { "id": "b", "hex": "#24283b", "name": "Dark" }
+  ],
+  "motifs": [
+    { "id": "row", "rows": [
+      "1100000011"
+    ] }
+  ],
+  "mappings": [
+    { "id": "ab", "rows": [
+      ["a", "b"]
+    ] }
+  ],
+  "bands": [
+    { "motif": "row", "mapping": "ab", "offset": 0 }
+  ]
+}

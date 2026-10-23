@@ -1,0 +1,20 @@
+{
+  "format": "fairisle-library",
+  "version": 1,
+  "meta": { "name": "Tiny library", "license": "CC0-1.0" },
+  "palette": [
+    { "id": "white", "hex": "#f4f1ea", "name": "White" },
+    { "id": "black", "hex": "#1b1b1b", "name": "Black" }
+  ],
+  "motifs": [
+    { "id": "dots", "name": "Dots", "rows": [
+      "10",
+      "00"
+    ] }
+  ],
+  "mappings": [
+    { "id": "two-colour", "name": "Two colour", "rows": [
+      ["white", "black"]
+    ] }
+  ]
+}

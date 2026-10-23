@@ -1,0 +1,14 @@
+{
+  "description": "F5: AAAAAAAAAA — B is absent from the row, so it has no floats",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "A": "a",
+      "B": "b"
+    },
+    "rows": [
+      "AAAAAAAAAA"
+    ]
+  }
+}

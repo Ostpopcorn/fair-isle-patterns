@@ -1,0 +1,32 @@
+{
+  "description": "Required fields missing or of the wrong JSON type are E001; every one is reported",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "path": "gauge"
+      },
+      "detail": "gauge"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "band": 0,
+        "path": "bands[0].mapping"
+      },
+      "detail": "bands[0].mapping"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "path": "motifs[0].rows"
+      },
+      "detail": "motifs[0].rows"
+    }
+  ]
+}

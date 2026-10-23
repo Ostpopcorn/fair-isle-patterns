@@ -1,0 +1,11 @@
+{
+  "description": "Malformed JSON returns E001 with the parser's position",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "detail": "line 3"
+    }
+  ]
+}
