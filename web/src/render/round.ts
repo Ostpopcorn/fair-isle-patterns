@@ -57,10 +57,17 @@ export function drawRound(ctx: CanvasRenderingContext2D, p: RoundDraw): void {
     return;
   }
 
-  const left = Math.max(0, Math.floor(p.cx - rpx));
-  const right = Math.min(p.width, Math.ceil(p.cx + rpx));
-  const top = Math.max(0, Math.floor(p.bottom - chart.height * rowPx));
-  const bottom = Math.min(p.height, Math.ceil(p.bottom));
+  // The pixels are computed at device resolution: putImageData ignores the
+  // canvas transform, so on high-density screens everything is scaled by k.
+  const k = ctx.getTransform().a || 1;
+  const cxD = p.cx * k;
+  const rD = rpx * k;
+  const rowD = rowPx * k;
+  const baseD = p.bottom * k;
+  const left = Math.max(0, Math.floor(cxD - rD));
+  const right = Math.min(Math.round(p.width * k), Math.ceil(cxD + rD));
+  const top = Math.max(0, Math.floor(baseD - chart.height * rowD));
+  const bottom = Math.min(Math.round(p.height * k), Math.ceil(baseD));
   const w = right - left;
   const h = bottom - top;
   if (w <= 0 || h <= 0) {
@@ -74,7 +81,7 @@ export function drawRound(ctx: CanvasRenderingContext2D, p: RoundDraw): void {
   const shade = new Float32Array(w);
   const edge = new Uint8Array(w);
   for (let i = 0; i < w; i++) {
-    const u = Math.max(-1, Math.min(1, (left + i + 0.5 - p.cx) / rpx));
+    const u = Math.max(-1, Math.min(1, (left + i + 0.5 - cxD) / rD));
     const theta = Math.asin(u);
     const turns = (theta + Math.PI - p.rotation) / (2 * Math.PI);
     const c = Math.floor((((turns % 1) + 1) % 1) * n) % n;
@@ -87,21 +94,22 @@ export function drawRound(ctx: CanvasRenderingContext2D, p: RoundDraw): void {
   const img = ctx.createImageData(w, h);
   const data = img.data;
   const showSeams = rowPx >= 4;
+  const seamWidth = Math.max(1, Math.round(k));
   for (let j = 0; j < h; j++) {
-    const fromBottom = p.bottom - (top + j + 0.5);
-    const y = Math.floor(fromBottom / rowPx);
+    const fromBottom = baseD - (top + j + 0.5);
+    const y = Math.floor(fromBottom / rowD);
     if (y < 0 || y >= chart.height) continue;
-    const rowEdge = showSeams && Math.floor((fromBottom + 1) / rowPx) !== y;
+    const rowEdge = showSeams && Math.floor((fromBottom + seamWidth) / rowD) !== y;
     const base = y * n;
     for (let i = 0; i < w; i++) {
       const rgb = colors[chart.cells[base + column[i]]] ?? [255, 0, 255];
       let s = shade[i];
       if (rowEdge || (showSeams && edge[i] && shade[i] > 0.6)) s *= 0.88;
-      const k = (j * w + i) * 4;
-      data[k] = rgb[0] * s;
-      data[k + 1] = rgb[1] * s;
-      data[k + 2] = rgb[2] * s;
-      data[k + 3] = 255;
+      const o = (j * w + i) * 4;
+      data[o] = rgb[0] * s;
+      data[o + 1] = rgb[1] * s;
+      data[o + 2] = rgb[2] * s;
+      data[o + 3] = 255;
     }
   }
   ctx.putImageData(img, left, top);
@@ -112,15 +120,15 @@ export function drawRound(ctx: CanvasRenderingContext2D, p: RoundDraw): void {
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 4]);
     ctx.beginPath();
-    ctx.moveTo(sx, top - 6);
-    ctx.lineTo(sx, bottom + 6);
+    ctx.moveTo(sx, top / k - 6);
+    ctx.lineTo(sx, bottom / k + 6);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = theme.highlight;
     ctx.font = '11px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('start of round', sx, Math.max(12, top - 8));
+    ctx.fillText('start of round', sx, Math.max(12, top / k - 8));
   }
   ctx.restore();
 }

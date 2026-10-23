@@ -25,17 +25,18 @@ function reveal(issue: Issue, s: AppState): void {
   const l = issue.location;
   const chartIssue = l.row !== undefined && issue.severity !== 'error';
   if (chartIssue || ((l.band !== undefined) && issue.severity !== 'error')) {
-    store.ui({ issue, view: s.ui.view === 'motif' ? 'chart' : s.ui.view, bandIndex: l.band ?? s.ui.bandIndex });
+    // Highlights are drawn on the chart.
+    store.ui({ issue, view: 'chart', bandIndex: l.band ?? s.ui.bandIndex, screen: 'view' });
   } else if (l.mapping && issue.code !== 'E003') {
-    store.ui({ issue, panel: 'mappings', mappingId: l.mapping });
+    store.ui({ issue, panel: 'mappings', mappingId: l.mapping, screen: 'edit' });
   } else if (l.motif && (issue.code === 'E004' || issue.code === 'E005' || issue.code === 'E008')) {
-    store.ui({ issue, panel: 'motifs', motifId: l.motif, view: 'motif' });
+    store.ui({ issue, panel: 'motifs', motifId: l.motif, view: 'motif', screen: 'view' });
   } else if (l.band !== undefined) {
-    store.ui({ issue, panel: 'bands', bandIndex: l.band });
+    store.ui({ issue, panel: 'bands', bandIndex: l.band, screen: 'edit' });
   } else if (l.color || l.path?.startsWith('palette')) {
-    store.ui({ issue, panel: 'palette' });
+    store.ui({ issue, panel: 'palette', screen: 'edit' });
   } else if (l.path?.startsWith('gauge') || l.path?.startsWith('cast_on') || l.path?.startsWith('settings')) {
-    store.ui({ issue, panel: 'project' });
+    store.ui({ issue, panel: 'project', screen: 'edit' });
   } else {
     store.ui({ issue });
   }

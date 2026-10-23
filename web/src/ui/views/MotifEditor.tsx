@@ -6,6 +6,7 @@ import { store, type AppState, type Tool } from '../../state/store';
 import { NumberField, paintMotif, symbolColors } from '../components/common';
 import { motifCommands } from './motifCommands';
 import { zoomBus } from '../shortcuts';
+import { ZoomControls } from './ZoomControls';
 
 const TOOLS: { id: Tool; label: string; key: string; icon: string }[] = [
   { id: 'pencil', label: 'Pencil', key: 'P', icon: '✎' },
@@ -46,12 +47,18 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
   const [zoom, setZoom] = useState(1);
   const [hover, setHover] = useState<M.Cell | null>(null);
   const [preview, setPreview] = useState<M.Cell[] | null>(null);
+  const [moreTools, setMoreTools] = useState(false);
   const drag = useRef<{ anchor: M.Cell; last: M.Cell; symbol: M.Symbol; key: string } | null>(null);
 
   useEffect(() => {
     const el = hostRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setFit({ w: el.clientWidth - 32, h: el.clientHeight - 32 }));
+    const ro = new ResizeObserver(() => {
+      const css = getComputedStyle(el);
+      const padX = parseFloat(css.paddingLeft) + parseFloat(css.paddingRight);
+      const padY = parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
+      setFit({ w: el.clientWidth - padX, h: el.clientHeight - padY });
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -220,7 +227,7 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
                 title={`${t.label} (${t.key})`}
                 onClick={() => store.ui({ tool: t.id, selection: t.id === 'select' ? ui.selection : null })}
               >
-                <span aria-hidden="true">{t.icon}</span> <span class="small">{t.label}</span>
+                <span aria-hidden="true">{t.icon}</span> <span class="small">{t.id === 'rect' ? <><span class="long">Rectangle</span><span class="short">Rect</span></> : t.label}</span>
               </button>
             ))}
           </div>
@@ -243,8 +250,11 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
               <input type="checkbox" checked={ui.filledRect} onChange={() => store.ui({ filledRect: !ui.filledRect })} /> Filled
             </label>
           )}
+          <button class="btn small only-mobile" aria-expanded={moreTools} aria-controls="motif-more" onClick={() => setMoreTools(!moreTools)}>
+            {moreTools ? 'Fewer tools' : 'More tools'}
+          </button>
         </div>
-        <div class="toolbar">
+        <div class={`toolbar motif-more${moreTools ? ' open' : ''}`} id="motif-more">
           <span class="group">
             <button class="btn small" aria-pressed={ui.mirrorV} title="Mirror across the vertical centre line (M)" onClick={() => store.ui({ mirrorV: !ui.mirrorV })}>
               ⇆ Mirror
@@ -298,6 +308,13 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
             <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(motif, w, v)} />
           </span>
         </div>
+        <div class="row">
+          <div class="motif-info small muted" aria-live="polite">
+            <strong>{motif.name ?? motif.id}</strong> · {w} × {h} · used by {users.length} band{users.length === 1 ? '' : 's'}
+            {hover ? ` · column ${hover.x + 1} from the left, row ${hover.y + 1}` : ''}
+          </div>
+          <ZoomControls inline />
+        </div>
       </div>
       <div class="motif-stage">
         <div class="motif-canvas" ref={hostRef}>
@@ -314,10 +331,6 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
           />
         </div>
         <TilePreview s={s} motif={motif} />
-      </div>
-      <div class="hud" aria-live="polite">
-        {hover ? `Column ${hover.x + 1} from the left, row ${hover.y + 1} · ` : ''}
-        {w} × {h} · used by {users.length} band{users.length === 1 ? '' : 's'}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
-import { useRef, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { store, type AppState } from '../../state/store';
 import { currentTheme } from '../../render/chart';
 import { drawRound } from '../../render/round';
 import { findMotif } from '../../model/doc';
-import { prepare, useCanvasSize, useFrame, useZoomKeys } from './canvas';
+import { prepare, useCanvasSize, useFrame, useGestures, useZoomKeys } from './canvas';
+import { ZoomControls } from './ZoomControls';
 
 const TURN = Math.PI * 2;
 
@@ -12,7 +13,6 @@ export function RoundView({ s }: { s: AppState }) {
   const { hostRef, canvasRef, size } = useCanvasSize();
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const drag = useRef<{ x: number; rotation: number } | null>(null);
   const chart = shown?.chart ?? null;
   const doc = shown?.doc ?? s.doc;
   const layout = chart ? store.layoutOf(doc, chart) : null;
@@ -20,10 +20,17 @@ export function RoundView({ s }: { s: AppState }) {
   const circumference = chart && layout ? chart.width * layout.stitchWidth : 0;
   const tall = chart && layout ? chart.height * layout.rowHeight : 0;
   const diameter = circumference / Math.PI;
-  const fitScale = size.width && diameter ? Math.min((size.width - 60) / diameter, (size.height - 70) / Math.max(tall, 1)) : 1;
+  const fitScale = size.width && diameter ? Math.min((size.width - 60) / diameter, (size.height - 150) / Math.max(tall, 1)) : 1;
   const scale = Math.max(0.5, fitScale * zoom);
 
   useZoomKeys((kind) => setZoom((z) => (kind === 'fit' ? 1 : kind === 'in' ? Math.min(8, z * 1.25) : Math.max(0.2, z / 1.25))));
+
+  const radiusPx = (circumference / TURN) * scale;
+  // Dragging moves the fabric under the pointer, like turning the tube.
+  const gestures = useGestures({
+    onPan: (dx) => radiusPx > 0 && setRotation((r) => r + dx / radiusPx),
+    onPinch: (factor) => setZoom((z) => Math.max(0.2, Math.min(8, z * factor))),
+  });
 
   useFrame(() => {
     const canvas = canvasRef.current;
@@ -38,7 +45,8 @@ export function RoundView({ s }: { s: AppState }) {
       rotation,
       scale,
       cx: size.width / 2,
-      bottom: size.height / 2 + (tall * scale) / 2 + 10,
+      // Centred in the space above the controls at the bottom.
+      bottom: (size.height - 70) / 2 + (tall * scale) / 2 + 10,
       width: size.width,
       height: size.height,
     });
@@ -57,7 +65,6 @@ export function RoundView({ s }: { s: AppState }) {
   const repeat = Math.max(1, ...widths);
   const step = (TURN * Math.min(repeat, chart.width)) / chart.width;
   const degrees = Math.round(((((rotation / TURN) % 1) + 1) % 1) * 360);
-  const radiusPx = (circumference / TURN) * scale;
 
   return (
     <div class="canvas-host" ref={hostRef}>
@@ -66,24 +73,18 @@ export function RoundView({ s }: { s: AppState }) {
         role="img"
         aria-label={`The pattern as worn: front half of a tube ${circumference.toFixed(1)} cm around, turned ${degrees} degrees`}
         style={{ cursor: 'ew-resize' }}
-        onPointerDown={(e) => {
-          (e.currentTarget as Element).setPointerCapture(e.pointerId);
-          drag.current = { x: e.clientX, rotation };
-        }}
-        onPointerMove={(e) => {
-          if (!drag.current || radiusPx <= 0) return;
-          // Dragging moves the fabric under the pointer, like turning the tube.
-          setRotation(drag.current.rotation + (e.clientX - drag.current.x) / radiusPx);
-        }}
-        onPointerUp={() => (drag.current = null)}
-        onPointerCancel={() => (drag.current = null)}
+        onPointerDown={gestures.onPointerDown}
+        onPointerMove={gestures.onPointerMove}
+        onPointerUp={gestures.onPointerUp}
+        onPointerCancel={gestures.onPointerCancel}
         onWheel={(e) => {
           e.preventDefault();
           setZoom((z) => Math.max(0.2, Math.min(8, z * Math.exp(-e.deltaY * 0.0018))));
         }}
       />
       {shown.stale && <div class="stale">Showing the last valid chart: the pattern has errors</div>}
-      <div class="hud" style={{ pointerEvents: 'auto' }}>
+      <ZoomControls />
+      <div class="hud round-hud">
         <div class="row small wrap">
           <button class="btn small" onClick={() => setRotation(rotation - step)} title="Turn by one motif repeat">
             ◀ repeat

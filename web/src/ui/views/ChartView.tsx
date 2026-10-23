@@ -10,7 +10,8 @@ import {
   highlightFor,
   rowMarkers,
 } from '../../render/chart';
-import { prepare, useCanvasSize, useFrame, usePan, useZoomKeys, zoomAt, type View2D } from './canvas';
+import { isTouch, prepare, useCanvasSize, useFrame, useGestures, useZoomKeys, zoomAt, type View2D } from './canvas';
+import { ZoomControls } from './ZoomControls';
 
 const MIN_CELL = 0.5;
 const MAX_CELL = 60;
@@ -31,10 +32,14 @@ export function ChartView({ s }: { s: AppState }) {
     if (!chart || !size.width) return null;
     const availW = size.width - NUMBER_STRIP - MARKER_STRIP - 24;
     const availH = size.height - NUMBER_STRIP - 24;
-    const cell = Math.max(MIN_CELL, Math.min(32, availW / Math.max(1, chart.width), availH / Math.max(1, chart.height)));
+    const fitted = Math.min(32, availW / Math.max(1, chart.width), availH / Math.max(1, chart.height));
+    // On narrow screens a whole wide chart is unreadably small: start at a
+    // readable size instead, showing the right edge where rounds begin.
+    const cell = Math.max(MIN_CELL, fitted, Math.min(8, availH / Math.max(1, chart.height)));
     const cw = chart.width * cell;
     const ch = chart.height * cell;
-    return { scale: cell, ox: Math.max(12, (availW - cw) / 2 + 12), oy: Math.max(12, (availH - ch) / 2 + 12) };
+    const ox = cw <= availW ? Math.max(12, (availW - cw) / 2 + 12) : availW - cw + 12;
+    return { scale: cell, ox, oy: Math.max(12, (availH - ch) / 2 + 12) };
   };
 
   // Fit when the chart's size changes (or on first show).
@@ -63,7 +68,10 @@ export function ChartView({ s }: { s: AppState }) {
     else setView(zoomAt(view, kind === 'in' ? 1.25 : 0.8, size.width / 2, size.height / 2, MIN_CELL, MAX_CELL));
   });
 
-  const pan = usePan((dx, dy) => setView((v) => (v ? { ...v, ox: v.ox + dx, oy: v.oy + dy } : v)));
+  const pan = useGestures({
+    onPan: (dx, dy) => setView((v) => (v ? { ...v, ox: v.ox + dx, oy: v.oy + dy } : v)),
+    onPinch: (factor, cx, cy) => setView((v) => (v ? zoomAt(v, factor, cx, cy, MIN_CELL, MAX_CELL) : v)),
+  });
 
   useFrame(() => {
     const canvas = canvasRef.current;
@@ -134,8 +142,9 @@ export function ChartView({ s }: { s: AppState }) {
         onDblClick={() => setView(fit())}
       />
       {shown.stale && <div class="stale">Showing the last valid chart: the pattern has errors</div>}
+      <ZoomControls />
       <div class="hud">
-        {hover ? `Row ${hover.row} · stitch ${hover.stitch} · ${hover.color}` : `${chart!.width} stitches × ${chart!.height} rows · scroll to zoom, drag to pan`}
+        {hover ? `Row ${hover.row} · stitch ${hover.stitch} · ${hover.color}` : `${chart!.width} stitches × ${chart!.height} rows · ${isTouch() ? 'pinch to zoom, drag to pan' : 'scroll to zoom, drag to pan'}`}
       </div>
     </div>
   );

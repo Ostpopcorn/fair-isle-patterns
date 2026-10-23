@@ -11,7 +11,7 @@ export function MotifsPanel({ s }: { s: AppState }) {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: '', width: 8, height: 7 });
 
-  const select = (id: string) => store.ui({ motifId: id, view: 'motif', selection: null });
+  const select = (id: string) => store.ui({ motifId: id, view: 'motif', selection: null, screen: 'view' });
 
   const create = () => {
     const w = Math.round(draft.width);
@@ -98,7 +98,7 @@ export function MotifsPanel({ s }: { s: AppState }) {
           </label>
           <IdField label="Id (used in the file; bands follow when it changes)" value={motif.id} rename={renameMotif} onRenamed={(id) => store.ui({ motifId: id })} disabled={s.readOnly} />
           <div class="row">
-            <button class="btn small" onClick={() => store.ui({ view: 'motif' })}>
+            <button class="btn small" onClick={() => store.ui({ view: 'motif', screen: 'view' })}>
               Open in editor
             </button>
             <span class="spacer" />

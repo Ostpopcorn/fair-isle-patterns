@@ -99,11 +99,18 @@ export function ColorSelect(props: {
   label: string;
   allowNone?: boolean;
   grayscale?: boolean;
+  /** A visible role label, shown where the column headers are hidden. */
+  tag?: string;
 }) {
   const current = props.palette.find((c) => c.id === props.value);
   const unknown = props.value !== null && !current;
   return (
     <span class="color-select">
+      {props.tag && (
+        <span class="tag only-mobile" aria-hidden="true">
+          {props.tag}
+        </span>
+      )}
       {current ? <Swatch hex={current.hex} grayscale={props.grayscale} /> : <span class="swatch" style={{ background: 'transparent', borderStyle: 'dashed' }} />}
       <select
         aria-label={props.label}
@@ -241,7 +248,7 @@ export function MotifThumb(props: {
   useLayoutEffect(() => {
     if (ref.current) paintMotif(ref.current, props.rows, { cell, mapping: props.mapping, doc: props.doc, grayscale: props.grayscale, across: props.across });
   });
-  return <canvas ref={ref} class="thumb" role="img" aria-label={props.label ?? 'Motif preview'} style={{ width: `${w * cell}px`, height: `${h * cell}px` }} />;
+  return <canvas ref={ref} class="thumb" role="img" aria-label={props.label ?? 'Motif preview'} style={{ width: `${w * cell}px`, maxWidth: '100%', height: 'auto', aspectRatio: `${w} / ${h}` }} />;
 }
 
 export function Badge(props: { severity: 'error' | 'warning' | 'notice'; count: number }) {

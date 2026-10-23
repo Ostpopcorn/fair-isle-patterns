@@ -115,7 +115,7 @@ function MappingEditor({ s, mapping }: { s: AppState; mapping: Mapping }) {
         </button>
       </div>
 
-      <div class="mapping-row small muted" aria-hidden="true">
+      <div class="mapping-row mapping-head small muted" aria-hidden="true">
         <span>Row</span>
         <span>Background</span>
         <span>Foreground</span>
@@ -128,10 +128,10 @@ function MappingEditor({ s, mapping }: { s: AppState; mapping: Mapping }) {
         .map(({ row, i }) => (
           <div class="mapping-row" key={i} role="group" aria-label={`Mapping row ${i + 1}`}>
             <span class="small muted mono">{i + 1}</span>
-            <ColorSelect palette={doc.palette} grayscale={s.ui.grayscale} label={`Row ${i + 1} background`} value={row[0] ?? null} onChange={(id) => setRows(MapOps.setEntry(mapping.rows, i, 0, id))} />
-            <ColorSelect palette={doc.palette} grayscale={s.ui.grayscale} label={`Row ${i + 1} foreground`} value={row[1] ?? null} onChange={(id) => setRows(MapOps.setEntry(mapping.rows, i, 1, id))} />
-            <ColorSelect palette={doc.palette} grayscale={s.ui.grayscale} label={`Row ${i + 1} accent`} value={row[2] ?? null} allowNone onChange={(id) => setRows(MapOps.setEntry(mapping.rows, i, 2, id))} />
-            <span class="row" style={{ gap: '2px' }}>
+            <ColorSelect palette={doc.palette} grayscale={s.ui.grayscale} tag="Background" label={`Row ${i + 1} background`} value={row[0] ?? null} onChange={(id) => setRows(MapOps.setEntry(mapping.rows, i, 0, id))} />
+            <ColorSelect palette={doc.palette} grayscale={s.ui.grayscale} tag="Foreground" label={`Row ${i + 1} foreground`} value={row[1] ?? null} onChange={(id) => setRows(MapOps.setEntry(mapping.rows, i, 1, id))} />
+            <ColorSelect palette={doc.palette} grayscale={s.ui.grayscale} tag="Accent" label={`Row ${i + 1} accent`} value={row[2] ?? null} allowNone onChange={(id) => setRows(MapOps.setEntry(mapping.rows, i, 2, id))} />
+            <span class="row mapping-actions" style={{ gap: '2px' }}>
               <button class="btn small icon ghost" aria-label={`Move row ${i + 1} up`} disabled={i >= k - 1} onClick={() => setRows(MapOps.moveRow(mapping.rows, i, i + 1))}>
                 ↑
               </button>

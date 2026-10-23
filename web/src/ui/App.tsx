@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
-import { store, type Panel, type View } from '../state/store';
+import { store, type Panel, type Screen, type View } from '../state/store';
+import { Badge } from './components/common';
 import { Header } from './Header';
 import { IssuesPanel } from './IssuesPanel';
 import { Dialogs } from './dialogs/Dialogs';
@@ -22,11 +23,17 @@ const PANELS: { id: Panel; label: string }[] = [
   { id: 'project', label: 'Project' },
 ];
 
-const VIEWS: { id: View; label: string }[] = [
-  { id: 'motif', label: 'Motif editor' },
-  { id: 'chart', label: 'Chart' },
-  { id: 'gauge', label: 'Gauge preview' },
-  { id: 'round', label: 'In the round' },
+const VIEWS: { id: View; label: string; short: string }[] = [
+  { id: 'motif', label: 'Motif editor', short: 'Motif' },
+  { id: 'chart', label: 'Chart', short: 'Chart' },
+  { id: 'gauge', label: 'Gauge preview', short: 'Gauge' },
+  { id: 'round', label: 'In the round', short: 'Round' },
+];
+
+const SCREENS: { id: Screen; label: string; icon: string }[] = [
+  { id: 'edit', label: 'Edit', icon: '✎' },
+  { id: 'view', label: 'View', icon: '▦' },
+  { id: 'issues', label: 'Issues', icon: '⚑' },
 ];
 
 function useAppState() {
@@ -91,7 +98,7 @@ export function App() {
       ) : (
         <div />
       )}
-      <div class="workspace">
+      <div class="workspace" data-screen={s.ui.screen}>
         <section class="sidebar" aria-label="Work areas">
           <div class="tabs" role="tablist" aria-label="Work areas" onKeyDown={(e) => tabKeys(e, PANELS.map((p) => p.id), s.ui.panel, (id) => store.ui({ panel: id as Panel }))}>
             {PANELS.map((p) => (
@@ -116,8 +123,13 @@ export function App() {
           <div class="view-bar">
             <div class="seg" role="tablist" aria-label="Views" onKeyDown={(e) => tabKeys(e, VIEWS.map((v) => v.id), s.ui.view, (id) => store.ui({ view: id as View }))}>
               {VIEWS.map((v, i) => (
-                <button key={v.id} role="tab" aria-selected={s.ui.view === v.id} tabIndex={s.ui.view === v.id ? 0 : -1} title={`${v.label} (Alt+${i + 1})`} onClick={() => store.ui({ view: v.id })}>
-                  {v.label}
+                <button key={v.id} role="tab" aria-label={v.label} aria-selected={s.ui.view === v.id} tabIndex={s.ui.view === v.id ? 0 : -1} title={`${v.label} (Alt+${i + 1})`} onClick={() => store.ui({ view: v.id })}>
+                  <span class="long" aria-hidden="true">
+                    {v.label}
+                  </span>
+                  <span class="short" aria-hidden="true">
+                    {v.short}
+                  </span>
                 </button>
               ))}
             </div>
@@ -135,6 +147,7 @@ export function App() {
         </main>
         <IssuesPanel s={s} />
       </div>
+      <MobileNav screen={s.ui.screen} />
       <Dialogs s={s} />
       {s.ui.toast && (
         <div class="toast" role="status">
@@ -145,5 +158,29 @@ export function App() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Phones show one screen at a time, switched from a bottom bar. */
+function MobileNav({ screen }: { screen: Screen }) {
+  const issues = store.analysis().issues;
+  const count = (severity: string) => issues.filter((i) => i.severity === severity).length;
+  return (
+    <nav class="mobile-nav" aria-label="Screens">
+      {SCREENS.map((sc) => (
+        <button key={sc.id} aria-current={screen === sc.id ? 'page' : undefined} onClick={() => store.ui({ screen: sc.id })}>
+          <span aria-hidden="true" class="icon">
+            {sc.icon}
+          </span>
+          <span>{sc.label}</span>
+          {sc.id === 'issues' && (
+            <span class="row" style={{ gap: '2px' }}>
+              <Badge severity="error" count={count('error')} />
+              <Badge severity="warning" count={count('warning')} />
+            </span>
+          )}
+        </button>
+      ))}
+    </nav>
   );
 }

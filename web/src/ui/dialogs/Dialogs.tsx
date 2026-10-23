@@ -149,7 +149,7 @@ function HelpDialog() {
   const keys = (k: string) => (mac ? k.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥') : k);
   return (
     <Modal title="Help and keyboard shortcuts" onClose={close} wide>
-      <div class="grid2" style={{ alignItems: 'start' }}>
+      <div class="grid2 help-grid" style={{ alignItems: 'start' }}>
         <div>
           <h3>How it works</h3>
           <ul class="small">
@@ -183,7 +183,7 @@ function HelpDialog() {
                 <tbody>
                   {SHORTCUTS.filter((s) => s.group === g).map((s) => (
                     <tr key={s.keys}>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td class="keys-cell">
                         {keys(s.keys)
                           .split(/( or | \/ |  \/  | … )/)
                           .map((part, i) => (/^( or | \/ |  \/  | … )$/.test(part) ? <span key={i}>{part}</span> : <kbd key={i}>{part.trim()}</kbd>))}

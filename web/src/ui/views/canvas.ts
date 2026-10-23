@@ -67,23 +67,57 @@ export function zoomAt(v: View2D, factor: number, mx: number, my: number, min: n
   return { scale, ox: mx - (mx - v.ox) * k, oy: my - (my - v.oy) * k };
 }
 
-/** Pointer-drag panning; returns handlers for the canvas. */
-export function usePan(onPan: (dx: number, dy: number) => void) {
-  const last = useRef<{ x: number; y: number; id: number } | null>(null);
+/** Whether the main pointer is a finger rather than a mouse. */
+export function isTouch(): boolean {
+  return typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+}
+
+/**
+ * One-finger (or mouse) dragging and two-finger pinching. Pinch reports the
+ * scale change and its centre relative to the element, and pans with the
+ * centre as it moves. Returns pointer handlers for the element.
+ */
+export function useGestures(handlers: {
+  onPan?: (dx: number, dy: number) => void;
+  onPinch?: (factor: number, cx: number, cy: number) => void;
+}) {
+  const latest = useRef(handlers);
+  latest.current = handlers;
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   return {
     onPointerDown: (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       (e.currentTarget as Element).setPointerCapture(e.pointerId);
-      last.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      pinch.current = null;
     },
     onPointerMove: (e: PointerEvent) => {
-      const l = last.current;
-      if (!l || l.id !== e.pointerId) return;
-      onPan(e.clientX - l.x, e.clientY - l.y);
-      last.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      const prev = pointers.current.get(e.pointerId);
+      if (!prev) return;
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.current.size === 1) {
+        latest.current.onPan?.(e.clientX - prev.x, e.clientY - prev.y);
+        return;
+      }
+      const [a, b] = [...pointers.current.values()];
+      const rect = (e.currentTarget as Element).getBoundingClientRect();
+      const now = { dist: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2 - rect.left, cy: (a.y + b.y) / 2 - rect.top };
+      const last = pinch.current;
+      if (last && last.dist > 0) {
+        latest.current.onPinch?.(now.dist / last.dist, now.cx, now.cy);
+        latest.current.onPan?.(now.cx - last.cx, now.cy - last.cy);
+      }
+      pinch.current = now;
     },
-    onPointerUp: () => (last.current = null),
-    onPointerCancel: () => (last.current = null),
-    dragging: () => last.current !== null,
+    onPointerUp: (e: PointerEvent) => {
+      pointers.current.delete(e.pointerId);
+      pinch.current = null;
+    },
+    onPointerCancel: (e: PointerEvent) => {
+      pointers.current.delete(e.pointerId);
+      pinch.current = null;
+    },
+    dragging: () => pointers.current.size > 0,
   };
 }

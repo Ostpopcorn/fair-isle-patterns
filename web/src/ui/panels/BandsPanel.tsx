@@ -69,7 +69,8 @@ export function BandsPanel({ s }: { s: AppState }) {
         </button>
       </div>
       <p class="small muted" style={{ margin: 0 }}>
-        Top band first, as in the chart. {doc.bands.length} band{doc.bands.length === 1 ? '' : 's'}, {total} rows. Alt+↑/↓ moves the focused band.
+        Top band first, as in the chart. {doc.bands.length} band{doc.bands.length === 1 ? '' : 's'}, {total} rows.
+        <span class="only-desktop"> Alt+↑/↓ moves the focused band.</span>
       </p>
       {doc.bands.length === 0 && <div class="empty">No bands yet. Add one to start the chart.</div>}
       {doc.bands
@@ -190,7 +191,7 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
       </label>
 
       {props.issues.filter((x) => x.severity !== 'notice').slice(0, 3).map((issue, k) => (
-        <button key={k} class={`issue ${issue.severity}`} onClick={() => store.ui({ issue, view: 'chart' })}>
+        <button key={k} class={`issue ${issue.severity}`} onClick={() => store.ui({ issue, view: 'chart', screen: 'view' })}>
           <span>
             <span class="code">{issue.code}</span>
             {issue.message}
@@ -207,7 +208,7 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
         </button>
         <span class="spacer" />
         {motif && (
-          <button class="btn small ghost" onClick={() => store.ui({ motifId: motif.id, view: 'motif', panel: 'motifs' })}>
+          <button class="btn small ghost" onClick={() => store.ui({ motifId: motif.id, view: 'motif', panel: 'motifs', screen: 'view' })}>
             Edit motif
           </button>
         )}

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { store, type AppState } from '../../state/store';
 import { currentTheme } from '../../render/chart';
 import { RULER, drawGauge, physicalSize } from '../../render/gauge';
-import { prepare, useCanvasSize, useFrame, usePan, useZoomKeys, zoomAt, type View2D } from './canvas';
+import { prepare, useCanvasSize, useFrame, useGestures, useZoomKeys, zoomAt, type View2D } from './canvas';
+import { ZoomControls } from './ZoomControls';
 
 export function GaugeView({ s }: { s: AppState }) {
   const shown = store.displayed();
@@ -38,7 +39,10 @@ export function GaugeView({ s }: { s: AppState }) {
     else setView(zoomAt(view, kind === 'in' ? 1.25 : 0.8, size.width / 2, size.height / 2, 1, 200));
   });
 
-  const pan = usePan((dx, dy) => setView((v) => (v ? { ...v, ox: v.ox + dx, oy: v.oy + dy } : v)));
+  const pan = useGestures({
+    onPan: (dx, dy) => setView((v) => (v ? { ...v, ox: v.ox + dx, oy: v.oy + dy } : v)),
+    onPinch: (factor, cx, cy) => setView((v) => (v ? zoomAt(v, factor, cx, cy, 1, 200) : v)),
+  });
 
   useFrame(() => {
     const canvas = canvasRef.current;
@@ -88,7 +92,8 @@ export function GaugeView({ s }: { s: AppState }) {
         onDblClick={() => setView(fit())}
       />
       {shown.stale && <div class="stale">Showing the last valid chart: the pattern has errors</div>}
-      <div class="hud" style={{ pointerEvents: 'auto', left: `${RULER + 12}px`, top: '10px', bottom: 'auto' }}>
+      <ZoomControls />
+      <div class="hud gauge-hud" style={{ left: `${RULER + 12}px` }}>
         {physical.width.toFixed(1)} × {physical.height.toFixed(1)} cm · {g.stitches} stitches × {g.rows} rows per {g.per_cm} cm ·{' '}
         <label class="check">
           <input type="checkbox" checked={square} onChange={() => setSquare(!square)} /> 10 cm square

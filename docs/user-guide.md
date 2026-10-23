@@ -161,6 +161,21 @@ colours. *From a file…* (Ctrl+Shift+O) imports from any library file.
 
 Exports work offline and follow the grayscale toggle.
 
+## On a phone
+
+On narrow screens the app shows one screen at a time, switched from the bar
+at the bottom:
+
+- **Edit**: the work areas (bands, motifs, mappings, palette, project).
+- **View**: the motif editor, chart, gauge preview and in-the-round view.
+  Tapping a motif opens it here.
+- **Issues**: everything the checks found. Tapping an issue shows it on the
+  chart or opens the work area that fixes it.
+
+The file actions, grayscale and help are in the ⋯ menu. In the views, drag
+to pan (or to turn the tube), pinch to zoom, or use the − / Fit / + buttons.
+The motif editor keeps the less common tools behind *More tools*.
+
 ## Keyboard
 
 Press `?` for the full list. Every tool and command has a shortcut, and every

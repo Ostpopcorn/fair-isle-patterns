@@ -894,11 +894,119 @@ kbd {
   border-radius: 8px;
 }
 
-/* ---------- small screens ---------- */
+/* ---------- shared helpers for narrow layouts ---------- */
+
+.only-mobile,
+.short,
+.mobile-nav {
+  display: none !important;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border);
+  z-index: 2;
+}
+
+.zoom-controls.inline {
+  position: static;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.motif-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gauge-hud {
+  top: 8px;
+  bottom: auto;
+  right: 130px;
+  pointer-events: auto;
+  max-width: max-content;
+}
+
+.round-hud {
+  right: 10px;
+  pointer-events: auto;
+}
+
+.menu {
+  position: relative;
+}
+
+.menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 210px;
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  z-index: 15;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.menu-item:hover:not(:disabled),
+.menu-item:focus-visible {
+  background: var(--surface-2);
+}
+
+.menu-item:disabled {
+  opacity: 0.45;
+}
+
+.color-select .tag {
+  width: 82px;
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dialog-foot {
+  flex-wrap: wrap;
+}
+
+.keys-cell {
+  white-space: nowrap;
+}
+
+/* ---------- medium screens: issues below ---------- */
 
 @media (max-width: 1150px) {
   .workspace {
     grid-template-columns: 330px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
   }
 
   .issues {
@@ -908,46 +1016,314 @@ kbd {
     max-height: 260px;
   }
 
-  .workspace {
-    grid-template-rows: minmax(0, 1fr) auto;
+  .sidebar .tabs [role='tab'] {
+    padding: 7px 6px;
   }
 }
 
+/* ---------- phones: one full-height screen at a time ---------- */
+
 @media (max-width: 800px) {
+  .only-desktop,
+  .long {
+    display: none !important;
+  }
+
+  .only-mobile {
+    display: revert !important;
+  }
+
+  .short {
+    display: inline !important;
+  }
+
   .app {
-    height: auto;
-    min-height: 100%;
+    height: 100vh;
+    height: 100dvh;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
   }
 
-  .workspace {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
+  .header {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 6px 10px;
+    padding-top: max(6px, env(safe-area-inset-top));
   }
 
-  .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
+  .brand {
+    margin-right: 0;
   }
 
-  .sidebar .panel {
-    max-height: 55vh;
-  }
-
-  .main {
-    height: 70vh;
-  }
-
-  .motif-stage {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-
-  .tile-preview {
-    border-left: 0;
-    border-top: 1px solid var(--border);
+  .doc-title {
+    flex: 1;
+    min-width: 0;
   }
 
   .doc-title strong {
-    max-width: 150px;
+    max-width: none;
+  }
+
+  .save-text {
+    display: none;
+  }
+
+  .header > .spacer {
+    display: none;
+  }
+
+  .workspace {
+    display: block;
+    min-height: 0;
+  }
+
+  .workspace > .sidebar,
+  .workspace > .main,
+  .workspace > .issues {
+    display: none;
+    height: 100%;
+    max-height: none;
+    border: 0;
+  }
+
+  .workspace[data-screen='edit'] > .sidebar,
+  .workspace[data-screen='view'] > .main,
+  .workspace[data-screen='issues'] > .issues {
+    display: flex;
+  }
+
+  .mobile-nav {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-height: 54px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .mobile-nav button .icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .mobile-nav button[aria-current='page'] {
+    color: var(--accent);
+  }
+
+  .mobile-nav button[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 25%;
+    right: 25%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--accent);
+  }
+
+  .mobile-nav .row {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 12px);
+  }
+
+  .mobile-nav .badge {
+    padding: 0 4px;
+    line-height: 15px;
+    font-size: 10px;
+  }
+
+  .toast {
+    bottom: calc(66px + env(safe-area-inset-bottom));
+  }
+
+  .tabs [role='tab'] {
+    padding: 8px 9px;
+  }
+
+  .view-bar {
+    padding: 6px 8px;
+  }
+
+  .view-bar {
+    flex-wrap: wrap;
+  }
+
+  .view-bar > .spacer,
+  .view-bar > .muted {
+    display: none;
+  }
+
+  .view-bar .seg {
+    flex: 1 1 100%;
+  }
+
+  .view-bar .seg > button {
+    flex: 1;
+    padding: 6px 4px;
+  }
+
+  /* Motif editor: the canvas gets the height, the preview a short strip. */
+  .motif-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .motif-tools {
+    padding: 6px 8px;
+  }
+
+  .motif-tools .seg > button {
+    padding: 4px 8px;
+  }
+
+  .motif-more {
+    display: none;
+  }
+
+  .motif-more.open {
+    display: flex;
+  }
+
+  .motif-stage {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .motif-canvas {
+    flex: 1 1 auto;
+    min-height: 180px;
+    padding: 8px;
+  }
+
+  .tile-preview {
+    flex: none;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    padding: 6px 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tile-preview h3,
+  .tile-preview p {
+    display: none;
+  }
+
+  .tile-preview .field > span {
+    display: none;
+  }
+
+  .tile-preview canvas {
+    width: auto;
+    max-width: 100%;
+    max-height: 72px;
+  }
+
+  /* Mapping rows stack: role labels on the left, actions on the right. */
+  .mapping-head {
+    display: none;
+  }
+
+  .mapping-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'num bg acts'
+      'num fg acts'
+      'num acc acts';
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .mapping-row > :nth-child(1) {
+    grid-area: num;
+    align-self: start;
+    padding-top: 6px;
+  }
+
+  .mapping-row > :nth-child(2) {
+    grid-area: bg;
+  }
+
+  .mapping-row > :nth-child(3) {
+    grid-area: fg;
+  }
+
+  .mapping-row > :nth-child(4) {
+    grid-area: acc;
+  }
+
+  .mapping-row > :nth-child(5) {
+    grid-area: acts;
+    flex-direction: column;
+  }
+
+  .hud {
+    font-size: 11px;
+    left: 8px;
+    right: auto;
+    max-width: calc(100% - 16px);
+  }
+
+  .round-hud {
+    right: 8px;
+  }
+
+  .gauge-hud {
+    right: 136px;
+    max-width: none;
+  }
+
+  /* Dialogs use the whole width. */
+  .overlay {
+    padding: 8px;
+    align-items: end;
+  }
+
+  .dialog {
+    max-height: calc(100dvh - 16px);
+    width: 100%;
+  }
+
+  .dialog-head {
+    padding: 12px 12px 8px;
+  }
+
+  .dialog-body {
+    padding: 0 12px 12px;
+  }
+
+  .dialog-foot {
+    padding: 10px 12px 12px;
+  }
+
+  .help-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .keys-cell {
+    white-space: normal;
+  }
+
+  .lib-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 }

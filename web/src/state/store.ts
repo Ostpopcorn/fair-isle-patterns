@@ -9,6 +9,8 @@ import { newPattern } from '../model/doc';
 export type Panel = 'bands' | 'motifs' | 'mappings' | 'palette' | 'project';
 export type View = 'motif' | 'chart' | 'gauge' | 'round';
 export type Tool = 'pencil' | 'fill' | 'line' | 'rect' | 'select';
+/** On phones one screen is shown at a time; wider layouts show all three. */
+export type Screen = 'edit' | 'view' | 'issues';
 
 export type Dialog =
   | { kind: 'welcome' }
@@ -38,6 +40,7 @@ export interface UiState {
   grayscale: boolean;
   dialog: Dialog | null;
   toast: string | null;
+  screen: Screen;
 }
 
 export interface FileRef {
@@ -89,6 +92,7 @@ export const initialUi: UiState = {
   grayscale: false,
   dialog: null,
   toast: null,
+  screen: 'edit',
 };
 
 export class Store {
