@@ -1,0 +1,428 @@
+# File format reference
+
+Version 1 of the Fair Isle Pattern Builder file format. The format is the
+contract between the app, the core and anyone else who reads or writes
+these files: every feature of the app is expressible in it, and nothing the
+app shows is stored that the format does not describe.
+
+- Pattern files use the extension `.fairisle.json` (a placeholder until the
+  project is named).
+- Library files use `.fairisle-library.json`.
+- Files are UTF-8 JSON.
+
+## Contents
+
+1. [The four layers](#the-four-layers)
+2. [Pattern files](#pattern-files)
+3. [Reading direction](#reading-direction)
+4. [How the chart is compiled](#how-the-chart-is-compiled)
+5. [Validation](#validation)
+6. [Canonical form](#canonical-form)
+7. [Library files](#library-files)
+8. [Compatibility and versions](#compatibility-and-versions)
+9. [Full example](#full-example)
+
+## The four layers
+
+A pattern is one self-contained file built from four layers:
+
+1. **Palette**: the actual colours and yarns.
+2. **Motifs**: pure shape. Each cell is background (`0`), foreground (`1`)
+   or accent (`2`).
+3. **Mappings**: reusable colour schemes saying which palette colours fill
+   background, foreground and accent, row by row.
+4. **Bands**: stacked bottom to top. Each band combines one motif, one
+   mapping and a sideways offset.
+
+The chart is never stored. It is computed from these layers every time
+they change.
+
+## Pattern files
+
+### Top-level fields
+
+| Field      | Type    | Required | Meaning |
+|------------|---------|----------|---------|
+| `format`   | string  | yes | Always `"fairisle-pattern"` |
+| `version`  | integer | yes | Format version, `1` |
+| `meta`     | object  | yes | See [meta](#meta) |
+| `gauge`    | object  | yes | See [gauge](#gauge) |
+| `cast_on`  | integer | yes | Stitches in the round; equals the chart width. 1–1000 |
+| `settings` | object  | no  | See [settings](#settings) |
+| `palette`  | array   | yes | Colours, at least 2 |
+| `motifs`   | array   | yes | Motif definitions |
+| `mappings` | array   | yes | Colour mappings |
+| `bands`    | array   | yes | Bands; the first element is the **bottom** band |
+
+### meta
+
+| Field         | Type   | Required | Meaning |
+|---------------|--------|----------|---------|
+| `name`        | string | yes | Pattern name |
+| `author`      | string | no  | |
+| `license`     | string | no  | SPDX identifier, such as `CC-BY-SA-4.0` |
+| `description` | string | no  | |
+| `created`     | string | no  | ISO 8601 date-time |
+| `modified`    | string | no  | ISO 8601 date-time |
+
+### gauge
+
+| Field      | Type   | Required | Meaning |
+|------------|--------|----------|---------|
+| `stitches` | number | yes | Stitches per `per_cm` centimetres, > 0 |
+| `rows`     | number | yes | Rows per `per_cm` centimetres, > 0 |
+| `per_cm`   | number | no  | Default `10` |
+
+One stitch is `per_cm / stitches` cm wide and one row `per_cm / rows` cm
+tall.
+
+### settings
+
+Thresholds for the checks. They are stored in the pattern so everyone who
+opens it sees the same checks.
+
+| Field                | Type    | Default | Meaning |
+|----------------------|---------|---------|---------|
+| `float_notice`       | integer | `5`  | Floats this long or longer are noted (≥ 2) |
+| `float_warning`      | integer | `8`  | Floats this long or longer are warnings (≥ `float_notice`) |
+| `max_colors_per_row` | integer | `2`  | More colours in one row is a warning (≥ 1) |
+| `min_contrast`       | number  | `15` | Minimum CIELAB L* difference (0–100) |
+
+### Palette entry
+
+| Field  | Type   | Required | Meaning |
+|--------|--------|----------|---------|
+| `id`   | string | yes | Identifier |
+| `hex`  | string | yes | `#rrggbb` (either case) |
+| `name` | string | no  | Free text, such as a shade name |
+| `yarn` | string | no  | Free text, such as a shade number |
+
+### Motif
+
+| Field  | Type            | Required | Meaning |
+|--------|-----------------|----------|---------|
+| `id`   | string          | yes | Identifier |
+| `name` | string          | no  | |
+| `rows` | array of string | yes | At least one row |
+
+- Every row has the same length: the motif width, 1–200. The number of
+  rows is the height, 1–200.
+- Characters: `0` background, `1` foreground, `2` accent. The character `.`
+  is reserved for the future shaping system (no-stitch cells) and is an
+  error (E005) in version 1.
+
+### Mapping
+
+| Field  | Type  | Required | Meaning |
+|--------|-------|----------|---------|
+| `id`   | string | yes | Identifier |
+| `name` | string | no  | |
+| `rows` | array  | yes | At least one row |
+
+Each row is `[bg, fg]` or `[bg, fg, accent]`, using palette ids. A mapping
+shorter than a band cycles from its start (see
+[compilation](#how-the-chart-is-compiled)).
+
+### Band
+
+| Field     | Type    | Required | Meaning |
+|-----------|---------|----------|---------|
+| `motif`   | string  | yes | Motif id |
+| `mapping` | string  | yes | Mapping id |
+| `offset`  | integer | no  | Default `0`. Positive values slide the motif **left** in the chart |
+| `times`   | integer | no  | Default `1`. How many times the motif repeats vertically (≥ 1) |
+| `name`    | string  | no  | |
+
+A plain spacer is a band whose motif is all `0`; `times` sets its height.
+
+### Identifiers
+
+Ids match `^[a-z0-9][a-z0-9_-]{0,63}$` and are unique within their own
+collection (palette, motifs, mappings). The same id may appear in two
+different collections.
+
+## Reading direction
+
+The file stores rows in **knitting order**, so it reads upside down compared
+with the chart:
+
+- `rows[0]` of a motif is its **bottom** row, the first one knitted.
+- `rows[0]` of a mapping applies to the first row a band knits.
+- `bands[0]` is the bottom band.
+- Character 0 of a motif row is the **leftmost** column in the chart view.
+
+Knitters count differently, and the app, exports and issues use knitter
+numbering:
+
+- Chart rows are numbered from **1 at the bottom**.
+- Stitches are numbered from **1 at the right edge**, because rounds are
+  knitted right to left. Column `c` (0-based from the left) is stitch
+  `cast_on − c`.
+
+## How the chart is compiled
+
+The chart is `cast_on` cells wide, with one row per motif row of every band,
+stacked bottom to top. For band `b` starting at chart row `R` (the sum of the
+heights of the bands below it), with motif `M` of width `w` and height `h`,
+`times = t`, mapping `P` with `k` rows and offset `o`, the band is `h × t`
+rows tall, and for each band row `j` from `0` to `h × t − 1`:
+
+1. motif row `r = j mod h` (the motif repeats vertically);
+2. for each column `c` from `0` to `cast_on − 1`, motif column
+   `m = ((c + o) mod w + w) mod w` (a positive offset slides the motif left);
+3. symbol `s = M.rows[r][m]`;
+4. mapping row `P.rows[j mod k]` (the mapping cycles over the whole band
+   height and does not restart with each vertical repeat);
+5. the cell takes the palette colour for background (`0`), foreground (`1`)
+   or accent (`2`).
+
+If `cast_on` is not a multiple of `w`, the last repeat is cut off at the
+right edge. This is allowed but produces W103.
+
+Offset `7` on a 5-wide motif is therefore exactly offset `2`, and offset
+`-3` is the same again.
+
+## Validation
+
+Issues have a code, a severity, an English message and a location.
+
+- **Errors** mean the file cannot be compiled reliably. All errors are
+  collected in one pass; when any error exists there is no chart, and the app
+  keeps showing the last valid one.
+- **Warnings** are clear knitting problems the knitter may still accept.
+- **Notices** are gentle hints.
+
+### Errors
+
+| Code | Rule |
+|------|------|
+| E001 | The document is not structurally readable: not JSON (the message gives the line and column), not an object, `format` wrong, `version` missing or not an integer (or below 1), a required field missing, or a field of the wrong JSON type (for example `rows` that is not an array of strings) |
+| E002 | Duplicate id within the palette, the motifs or the mappings (reported for every repeat after the first) |
+| E003 | Unknown reference: band → motif, band → mapping, mapping row → palette colour |
+| E004 | A motif has no rows, empty rows, or rows of different lengths |
+| E005 | A motif contains a character other than `0`, `1`, `2` (including `.`, reserved for shaping) |
+| E006 | A mapping has no rows, or a row with fewer than 2 or more than 3 entries |
+| E007 | A motif row uses `2` but the mapping row applied to it has no accent. Reported once per band, motif row and mapping row combination |
+| E008 | Out-of-range value: `hex` not `#rrggbb`; a gauge value ≤ 0; `cast_on` not a whole number in 1–1000; a motif over 200 × 200; more than 1000 chart rows; `offset` not a whole number; `times` not a whole number ≥ 1; `float_notice` < 2, not whole, or greater than `float_warning`; `max_colors_per_row` < 1; `min_contrast` outside 0–100; an id that does not match the identifier pattern; a pattern palette with fewer than 2 colours |
+
+E001 is checked first. When a document has E001 issues, the other checks do
+not run: on a structurally broken document they would only repeat the same
+problem in other words.
+
+### Warnings and notices
+
+| Code | Severity | Rule | Setting |
+|------|----------|------|---------|
+| W101 | notice or warning | Long float (below) | `float_notice`, `float_warning` |
+| W102 | warning | More distinct colours in one chart row than the limit | `max_colors_per_row` |
+| W103 | warning | `cast_on` is not a multiple of a band's motif width; once per offending band | — |
+| W104 | — | Reserved for the shaping system | — |
+| W105 | notice | Low lightness contrast in a mapping row (below) | `min_contrast` |
+| W106 | notice | Unknown field ignored (and kept on save) | — |
+
+W101 and W102 need a compiled chart, so they appear only when there are no
+errors. W103 and W105 are reported whenever they can be computed.
+
+#### W101: floats
+
+Floats are computed per compiled row, treating the row as a ring because it
+is knitted in the round.
+
+1. The row's stitches form a ring.
+2. For each colour X in the row, a float of X is a maximal run of
+   consecutive ring stitches that are not X, with X on both sides.
+3. Its length is the number of stitches in the run.
+4. A colour that appears exactly once in a ring of n stitches has one float
+   of length n − 1. A colour absent from the row has no floats.
+5. One W101 per row and colour, based on the longest float: a **warning** if
+   it is at least `float_warning`, otherwise a **notice** if it is at least
+   `float_notice`. The location lists every run at or above `float_notice`.
+
+Runs are given in stitch numbers: a run `{ start, length }` covers stitches
+`start`, `start + 1`, … leftwards, wrapping from stitch `cast_on` to 1.
+
+Worked cases (`float_notice` 5, `float_warning` 8; letters are colours, each
+string one row, the row a ring):
+
+| Case | Row | Result | Why |
+|------|-----|--------|-----|
+| F1 | `ABABAB` | none | All floats are 1 |
+| F2 | `AAAAAAAAAB` | warning: B float 9 | B appears once in 10 stitches |
+| F3 | `BBAAAAAABB` | notice: B float 6 | A's float wraps around (stitches 9, 10, 1, 2) and is only 4 |
+| F4 | `ABBBBA` | none | The two A stitches meet across the ring, so A's float is 4 |
+| F5 | `AAAAAAAAAA` | none | B is absent, so it has no floats |
+| F6 | `ABBBBBA` | notice: A float 5 | Lower edge of the notice range |
+| F7 | `ABBBBBBBA` | notice: A float 7 | Upper edge of the notice range |
+| F8 | `ABBBBBBBBA` | warning: A float 8 | Lower edge of the warning range |
+
+#### W102: colours per row
+
+Count the distinct palette colours among the row's stitches. A mapping row
+with the same colour as background and foreground counts it once.
+
+#### W103: repeat fit
+
+The message suggests the nearest cast-on values that suit every band's
+width: multiples of their least common multiple, up to 1000. For example,
+`cast_on` 124 with motif widths 6 and 8 suggests 120 or 144.
+
+#### W105: contrast
+
+Compute CIELAB L* (D65) of each colour. A notice is raised when the L*
+difference between a mapping row's background and its foreground, or its
+background and its accent, is below `min_contrast`. A slot that uses the
+background colour itself is not compared (a solid row is deliberate).
+
+### Issue locations
+
+```ts
+type Issue = {
+  code: string;               // "E003", "W101", ...
+  severity: "error" | "warning" | "notice";
+  message: string;            // English, human-readable
+  location: {
+    band?: number;            // 0-based index into bands
+    motif?: string;           // motif id
+    mapping?: string;         // mapping id
+    color?: string;           // palette id
+    row?: number;             // chart row, 1-based from the bottom
+    stitch?: number;          // 1-based from the right
+    runs?: { start: number; length: number }[];  // W101 float runs
+    motifRow?: number;        // motif row, 1-based from the bottom
+    mappingRow?: number;      // mapping row, 1-based
+    path?: string;            // the offending field, such as "bands[2].offset"
+  };
+};
+```
+
+`color`, `motifRow`, `mappingRow` and `path` extend the specification's
+location so that, for example, E007 can point at the motif row, the band and
+the mapping row together.
+
+## Canonical form
+
+The core writes every file in one canonical form so that git diffs stay
+minimal:
+
+- 2-space indent, LF line endings, a trailing newline;
+- keys in the order of the tables above; unknown fields after the known
+  ones, sorted by key (nested objects inside unknown fields too);
+- `meta`, `gauge`, `settings`, palette entries and bands on one line each;
+- one motif row and one mapping row per line;
+- whole numbers without a decimal point (`10`, not `10.0`);
+- defaults written out, except a band's `times`, which is omitted when it is
+  `1` (`offset` is always written);
+- no column alignment, so renaming one item never touches other lines.
+
+Reading a canonical file and writing it again reproduces it byte for byte.
+Files in any other layout are accepted and rewritten canonically on save.
+
+## Library files
+
+Libraries are plain files of reusable motifs, mappings and palettes, so the
+community can grow them through pull requests.
+
+- Same envelope as a pattern, with `"format": "fairisle-library"` and
+  `"version": 1`.
+- `meta` plus any of `palette`, `motifs` and `mappings`, with exactly the
+  schemas above. No `bands`, `gauge` or `cast_on` (they would be unknown
+  fields, W106).
+- A mapping in a library may only reference palette colours defined in the
+  same file (E003 otherwise).
+- Validated with the same codes as patterns, except that a library palette
+  may have any number of colours.
+
+Projects stay self-contained: inserting a library item copies it into the
+project, and a pattern never references a library. When an imported item's
+id is already taken, it is renamed with a numeric suffix (`peerie-x` →
+`peerie-x-2`) and references inside the import follow. An item identical to
+the one already in the project (same id, same content) is reused rather than
+duplicated. A mapping brings the colours it uses with it.
+
+## Compatibility and versions
+
+- **Unknown fields** are reported as W106 and preserved on save.
+- **Newer versions**: a file with a higher `version` than the reader supports
+  opens read-only, with a notice.
+- **Older versions** are migrated on load, one version at a time
+  (`core/src/migrate.rs`). Version 1 is the first.
+- Reserved for the shaping system: the motif character `.` and warning code
+  W104. Later features are planned as additions (an optional `overrides` list
+  on bands, a no-stitch sentinel and per-row stitch counts in the compiled
+  chart), so version 1 files stay valid.
+
+## Full example
+
+The body of a hat with a peerie band and a flower band using the accent. It
+is the fixture `fixtures/hat-basic/input.fairisle.json`, in canonical form.
+
+```json
+{
+  "format": "fairisle-pattern",
+  "version": 1,
+  "meta": { "name": "Peerie hat", "license": "CC-BY-SA-4.0" },
+  "gauge": { "stitches": 28, "rows": 32, "per_cm": 10 },
+  "cast_on": 120,
+  "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
+  "palette": [
+    { "id": "cream", "hex": "#efe6d2", "name": "Natural" },
+    { "id": "navy", "hex": "#1f2a44" },
+    { "id": "rust", "hex": "#a4452c" },
+    { "id": "gold", "hex": "#d9a441" }
+  ],
+  "motifs": [
+    { "id": "peerie-x", "rows": [
+      "100001",
+      "010010",
+      "001100",
+      "010010",
+      "100001"
+    ] },
+    { "id": "solid", "rows": [
+      "0"
+    ] },
+    { "id": "flower", "rows": [
+      "00010000",
+      "00111000",
+      "01121100",
+      "00111000",
+      "00010000"
+    ] }
+  ],
+  "mappings": [
+    { "id": "sunset", "rows": [
+      ["cream", "navy"],
+      ["cream", "rust"],
+      ["cream", "gold"],
+      ["cream", "rust"],
+      ["cream", "navy"]
+    ] },
+    { "id": "flower-colors", "rows": [
+      ["cream", "rust", "gold"]
+    ] },
+    { "id": "plain", "rows": [
+      ["cream", "navy"]
+    ] }
+  ],
+  "bands": [
+    { "motif": "peerie-x", "mapping": "sunset", "offset": 0 },
+    { "motif": "solid", "mapping": "plain", "offset": 0 },
+    { "motif": "flower", "mapping": "flower-colors", "offset": 3 },
+    { "motif": "solid", "mapping": "plain", "offset": 0, "times": 2 }
+  ]
+}
+```
+
+It compiles to a chart 120 stitches wide and 13 rows tall: peerie rows 1–5,
+spacer row 6, flower rows 7–11 and spacer rows 12–13, with exactly these
+issues:
+
+| Code | Severity | Row | Detail |
+|------|----------|-----|--------|
+| W101 | notice  | 7  | rust float of 7 |
+| W101 | notice  | 8  | rust float of 5 |
+| W101 | notice  | 9  | cream float of 5 |
+| W101 | notice  | 9  | gold float of 7 |
+| W102 | warning | 9  | 3 colours (cream, rust, gold) |
+| W101 | notice  | 10 | rust float of 5 |
+| W101 | notice  | 11 | rust float of 7 |
