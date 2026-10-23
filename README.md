@@ -95,6 +95,8 @@ also checks that `web/src/core/types.ts` matches what the core returns.
 
 ## Self-hosting
 
+Pushes to `main` are built and deployed to GitHub Pages by the CI workflow.
+
 `npm run build` produces a static site in `web/dist` with relative paths,
 so it can be served from any static web server or sub-directory. A service
 worker caches the app and the WebAssembly module, so it runs offline after
