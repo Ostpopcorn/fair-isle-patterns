@@ -44,14 +44,21 @@ band's rows and its issues.
 - *Times* repeats the motif vertically, together with its colours.
 - *Mapping* lists the mappings of the band's motif. Choosing another motif
   keeps a mapping of the same id if it has one, or takes its first mapping.
+- *+ New motif…* at the end of the motif list gives the band a new blank
+  motif and opens it in the motif editor. *+ New mapping…* at the end of the
+  mapping list gives the band a new mapping of its motif and opens it in the
+  mapping editor. Either is one undo step.
 - *+ Spacer* adds a plain one-row band in the background colour of the
   spacer motif's first mapping. A spacer that changes colour from row to row
   needs a plain motif with as many rows as the colours.
-- *Edit colours* opens the band's mapping in the Motifs tab.
+- *Edit colours* opens the band's mapping in the Motifs tab; *Edit motif*
+  opens its motif in the motif editor.
 - Reorder with ↑ ↓, or focus a card and press Alt+↑ / Alt+↓.
 
-**Motifs.** Pick a motif to edit it in the motif editor. Rename it, change
-its id (bands follow), duplicate it (with its mappings), or delete it. A
+**Motifs.** Pick a motif to see its details and colour mappings below the
+list; picking does not leave the Motifs tab, so you can go straight to its
+colours. *Edit motif* opens it in the motif editor. Rename it, change its id
+(bands follow), duplicate it (with its mappings), or delete it. A
 motif used by a band cannot be deleted; the message lists the bands. A new
 motif starts with one mapping that uses the first three palette colours as
 background, foreground and accent on every row.
@@ -198,7 +205,7 @@ at the bottom:
 - **Edit**: the work areas (bands, motifs and their mappings, palette,
   project).
 - **View**: the motif editor, chart, gauge preview and in-the-round view.
-  Tapping a motif opens it here.
+  *Edit motif* opens a motif here.
 - **Issues**: everything the checks found. Tapping an issue shows it on the
   chart or opens the work area that fixes it.
 

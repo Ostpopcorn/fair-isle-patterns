@@ -106,7 +106,7 @@ export function App() {
                 aria-selected={s.ui.panel === p.id}
                 aria-controls="work-panel"
                 tabIndex={s.ui.panel === p.id ? 0 : -1}
-                onClick={() => store.ui({ panel: p.id, ...(p.id === 'motifs' ? { view: 'motif' as View } : {}) })}
+                onClick={() => store.ui({ panel: p.id })}
               >
                 {p.label}
               </button>

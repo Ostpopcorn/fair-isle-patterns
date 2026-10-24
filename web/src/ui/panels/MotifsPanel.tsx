@@ -5,6 +5,7 @@ import { store, type AppState } from '../../state/store';
 import { MotifThumb, NumberField, mappingColors } from '../components/common';
 import { IdField } from '../components/IdField';
 import { MotifMappings } from './MotifMappings';
+import { editMotif } from '../navigate';
 
 export function MotifsPanel({ s }: { s: AppState }) {
   const doc = s.doc;
@@ -12,7 +13,9 @@ export function MotifsPanel({ s }: { s: AppState }) {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: '', width: 8, height: 7 });
 
-  const select = (id: string) => store.ui({ motifId: id, mappingId: null, view: 'motif', selection: null, screen: 'view' });
+  // Selecting shows the motif's details and mappings here; Edit motif opens
+  // the motif editor.
+  const select = (id: string) => store.ui({ motifId: id, mappingId: null, selection: null });
 
   const create = () => {
     const w = Math.round(draft.width);
@@ -23,6 +26,7 @@ export function MotifsPanel({ s }: { s: AppState }) {
     setCreating(false);
     setDraft({ name: '', width: 8, height: 7 });
     select(id);
+    editMotif(id);
   };
 
   return (
@@ -87,7 +91,13 @@ export function MotifsPanel({ s }: { s: AppState }) {
 
       {motif && (
         <div class="card">
-          <h3>Selected motif</h3>
+          <div class="row">
+            <h3>Selected motif</h3>
+            <span class="spacer" />
+            <button class="btn small primary" onClick={() => editMotif(motif.id)} title="Open the motif in the motif editor">
+              Edit motif
+            </button>
+          </div>
           <label class="field">
             <span>Name</span>
             <input
@@ -99,9 +109,6 @@ export function MotifsPanel({ s }: { s: AppState }) {
           </label>
           <IdField label="Id (used in the file; bands follow when it changes)" value={motif.id} rename={renameMotif} onRenamed={(id) => store.ui({ motifId: id })} disabled={s.readOnly} />
           <div class="row">
-            <button class="btn small" onClick={() => store.ui({ view: 'motif', screen: 'view' })}>
-              Open in editor
-            </button>
             <span class="spacer" />
             <button
               class="btn small"

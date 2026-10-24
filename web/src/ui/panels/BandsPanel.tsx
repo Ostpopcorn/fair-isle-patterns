@@ -1,7 +1,31 @@
 import type { Band, Issue } from '../../core/types';
-import { bandHeight, bandStartRows, ensureSpacer, findMapping, findMotif, moveItem, updateBand, withOptional } from '../../model/doc';
+import { addMapping, bandHeight, bandStartRows, blankMotif, ensureSpacer, findMapping, findMotif, moveItem, uniqueId, updateBand, withOptional } from '../../model/doc';
+import { blank } from '../../model/motif';
 import { store, type AppState } from '../../state/store';
 import { Badge, MotifThumb, NumberField, mappingColors } from '../components/common';
+import { editMapping, editMotif } from '../navigate';
+
+/** The select value of the "+ New …" options (ids cannot start with +). */
+const NEW = '+new';
+
+/** Gives band i a new blank motif (with the default mapping) and opens it in
+ * the motif editor. One undo step. */
+function newMotifFor(i: number): void {
+  const id = uniqueId('motif', store.get().doc.motifs.map((m) => m.id));
+  store.edit((d) => {
+    const motif = blankMotif(d, id, blank(8, 7));
+    return updateBand({ ...d, motifs: [...d.motifs, motif] }, i, { motif: id, mapping: motif.mappings[0].id });
+  });
+  editMotif(id);
+}
+
+/** Gives band i a new mapping of its motif and opens it in the mapping
+ * editor. One undo step. */
+function newMappingFor(i: number, motifId: string): void {
+  const { doc, id } = addMapping(store.get().doc, motifId);
+  store.edit(() => updateBand(doc, i, { mapping: id }));
+  editMapping(motifId, id);
+}
 
 function issuesByBand(issues: Issue[], starts: number[], heights: number[]): Map<number, Issue[]> {
   const out = new Map<number, Issue[]>();
@@ -134,8 +158,10 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
           <select
             value={band.motif}
             onChange={(e) => {
+              const value = (e.currentTarget as HTMLSelectElement).value;
+              if (value === NEW) return newMotifFor(i);
               // Keep the mapping id when the new motif has one by that name.
-              const next = findMotif(doc, (e.currentTarget as HTMLSelectElement).value);
+              const next = findMotif(doc, value);
               if (next) set({ motif: next.id, mapping: findMapping(next, band.mapping)?.id ?? next.mappings[0]?.id ?? band.mapping });
             }}
           >
@@ -145,17 +171,32 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
                 {m.name ? `${m.name} (${m.id})` : m.id}
               </option>
             ))}
+            <option value={NEW} disabled={s.readOnly}>
+              + New motif…
+            </option>
           </select>
         </label>
         <label class="field">
           <span>Mapping</span>
-          <select value={band.mapping} onChange={(e) => set({ mapping: (e.currentTarget as HTMLSelectElement).value })}>
+          <select
+            value={band.mapping}
+            onChange={(e) => {
+              const value = (e.currentTarget as HTMLSelectElement).value;
+              if (value === NEW) return motif && newMappingFor(i, motif.id);
+              set({ mapping: value });
+            }}
+          >
             {!mapping && <option value={band.mapping}>{band.mapping} (missing)</option>}
             {motif?.mappings.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name ? `${m.name} (${m.id})` : m.id}
               </option>
             ))}
+            {motif && (
+              <option value={NEW} disabled={s.readOnly}>
+                + New mapping…
+              </option>
+            )}
           </select>
         </label>
       </div>
@@ -216,11 +257,11 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
         <span class="spacer" />
         {motif && (
           <>
-            <button class="btn small ghost" title="Edit this band's mapping" onClick={() => store.ui({ motifId: motif.id, mappingId: band.mapping, panel: 'motifs', screen: 'edit' })}>
+            <button class="btn small ghost" title="Edit this band's mapping" onClick={() => editMapping(motif.id, band.mapping)}>
               <span class="long">Edit colours</span>
               <span class="short">Colours</span>
             </button>
-            <button class="btn small ghost" title="Edit the motif" onClick={() => store.ui({ motifId: motif.id, mappingId: band.mapping, view: 'motif', panel: 'motifs', screen: 'view' })}>
+            <button class="btn small ghost" title="Edit the motif" onClick={() => editMotif(motif.id)}>
               <span class="long">Edit motif</span>
               <span class="short">Motif</span>
             </button>
