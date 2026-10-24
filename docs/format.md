@@ -26,13 +26,16 @@ app shows is stored that the format does not describe.
 
 A pattern is one self-contained file built from four layers:
 
-1. **Palette**: the actual colours and yarns.
-2. **Motifs**: pure shape. Each cell is background (`0`), foreground (`1`)
-   or accent (`2`).
-3. **Mappings**: reusable colour schemes saying which palette colours fill
-   background, foreground and accent, row by row.
-4. **Bands**: stacked bottom to top. Each band combines one motif, one
-   mapping and a sideways offset.
+1. **Palette**: the colours and yarns the project uses.
+2. **Motifs**: shape. Each cell is background (`0`), foreground (`1`) or
+   accent (`2`).
+3. **Mappings**: the colourways of one motif. A mapping belongs to exactly
+   one motif and lives inside it. It picks up to 10 colours from the
+   palette and says, for every row of its motif, which of them fill the
+   background, the foreground and the accent. A motif has one or more
+   mappings.
+4. **Bands**: stacked bottom to top. Each band combines one motif, one of
+   that motif's mappings and a sideways offset.
 
 The chart is never stored. It is computed from these layers every time
 they change.
@@ -50,8 +53,7 @@ they change.
 | `cast_on`  | integer | yes | Stitches in the round; equals the chart width. 1–1000 |
 | `settings` | object  | no  | See [settings](#settings) |
 | `palette`  | array   | yes | Colours, at least 2 |
-| `motifs`   | array   | yes | Motif definitions |
-| `mappings` | array   | yes | Colour mappings |
+| `motifs`   | array   | yes | Motif definitions, each with its mappings |
 | `bands`    | array   | yes | Bands; the first element is the **bottom** band |
 
 ### meta
@@ -99,11 +101,12 @@ opens it sees the same checks.
 
 ### Motif
 
-| Field  | Type            | Required | Meaning |
-|--------|-----------------|----------|---------|
-| `id`   | string          | yes | Identifier |
-| `name` | string          | no  | |
-| `rows` | array of string | yes | At least one row |
+| Field      | Type            | Required | Meaning |
+|------------|-----------------|----------|---------|
+| `id`       | string          | yes | Identifier |
+| `name`     | string          | no  | |
+| `rows`     | array of string | yes | At least one row |
+| `mappings` | array           | yes | The motif's mappings, at least one |
 
 - Every row has the same length: the motif width, 1–200. The number of
   rows is the height, 1–200.
@@ -113,33 +116,54 @@ opens it sees the same checks.
 
 ### Mapping
 
-| Field  | Type  | Required | Meaning |
-|--------|-------|----------|---------|
-| `id`   | string | yes | Identifier |
-| `name` | string | no  | |
-| `rows` | array  | yes | At least one row |
+A mapping is written inside the motif it belongs to and cannot be used with
+any other motif.
 
-Each row is `[bg, fg]` or `[bg, fg, accent]`, using palette ids. A mapping
-shorter than a band cycles from its start (see
-[compilation](#how-the-chart-is-compiled)).
+| Field    | Type            | Required | Meaning |
+|----------|-----------------|----------|---------|
+| `id`     | string          | yes | Identifier, unique within the motif |
+| `name`   | string          | no  | |
+| `colors` | array of string | yes | 1–10 palette ids, each at most once |
+| `rows`   | array of string | yes | Exactly one row per motif row |
+
+- `colors` is the mapping's own set of colours. Position 0 is the first
+  entry, position 9 the tenth.
+- `rows[i]` colours `rows[i]` of the motif, so both lists have the same
+  length and the same order.
+- Each row is 2 or 3 digits: the position in `colors` of the background,
+  then of the foreground, then optionally of the accent. `"02"` is
+  background `colors[0]` with foreground `colors[2]`; `"021"` adds accent
+  `colors[1]`.
+- Replacing a colour in `colors` recolours every row that uses that
+  position. Colours in `colors` that no row uses are allowed.
+
+For example, with `"colors": ["cream", "navy", "rust", "gold"]`, the rows
+`["01", "02", "03", "02", "01"]` give a five-row motif a cream background
+and a navy, rust, gold, rust, navy foreground from bottom to top.
 
 ### Band
 
 | Field     | Type    | Required | Meaning |
 |-----------|---------|----------|---------|
 | `motif`   | string  | yes | Motif id |
-| `mapping` | string  | yes | Mapping id |
+| `mapping` | string  | yes | Id of one of that motif's mappings |
 | `offset`  | integer | no  | Default `0`. Positive values slide the motif **left** in the chart |
-| `times`   | integer | no  | Default `1`. How many times the motif repeats vertically (≥ 1) |
+| `times`   | integer | no  | Default `1`. How many times the motif and its colours repeat vertically (≥ 1) |
 | `name`    | string  | no  | |
 
 A plain spacer is a band whose motif is all `0`; `times` sets its height.
+A spacer that changes colour from row to row needs an all-`0` motif with as
+many rows as the colour sequence.
 
 ### Identifiers
 
-Ids match `^[a-z0-9][a-z0-9_-]{0,63}$` and are unique within their own
-collection (palette, motifs, mappings). The same id may appear in two
-different collections.
+Ids match `^[a-z0-9][a-z0-9_-]{0,63}$`.
+
+- Palette ids are unique within the palette, and motif ids within the
+  motifs.
+- Mapping ids are unique within their motif. Two motifs may each have a
+  mapping with the same id; a band tells them apart by its motif.
+- The same id may appear in different collections.
 
 ## Reading direction
 
@@ -147,7 +171,7 @@ The file stores rows in **knitting order**, so it reads upside down compared
 with the chart:
 
 - `rows[0]` of a motif is its **bottom** row, the first one knitted.
-- `rows[0]` of a mapping applies to the first row a band knits.
+- `rows[0]` of a mapping colours `rows[0]` of its motif.
 - `bands[0]` is the bottom band.
 - Character 0 of a motif row is the **leftmost** column in the chart view.
 
@@ -164,17 +188,19 @@ numbering:
 The chart is `cast_on` cells wide, with one row per motif row of every band,
 stacked bottom to top. For band `b` starting at chart row `R` (the sum of the
 heights of the bands below it), with motif `M` of width `w` and height `h`,
-`times = t`, mapping `P` with `k` rows and offset `o`, the band is `h × t`
-rows tall, and for each band row `j` from `0` to `h × t − 1`:
+`times = t`, mapping `P` (one of `M`'s mappings) and offset `o`, the band is
+`h × t` rows tall, and for each band row `j` from `0` to `h × t − 1`:
 
 1. motif row `r = j mod h` (the motif repeats vertically);
 2. for each column `c` from `0` to `cast_on − 1`, motif column
    `m = ((c + o) mod w + w) mod w` (a positive offset slides the motif left);
-3. symbol `s = M.rows[r][m]`;
-4. mapping row `P.rows[j mod k]` (the mapping cycles over the whole band
-   height and does not restart with each vertical repeat);
-5. the cell takes the palette colour for background (`0`), foreground (`1`)
-   or accent (`2`).
+3. symbol `s = M.rows[r][m]`: `0`, `1` or `2`;
+4. digit `d` = character `s` of `P.rows[r]`: the background, foreground or
+   accent digit of the mapping row for the same motif row;
+5. the cell takes the palette colour `P.colors[d]`.
+
+Because a mapping has exactly one row per motif row, each vertical repeat
+of a band has the same colours.
 
 If `cast_on` is not a multiple of `w`, the last repeat is cut off at the
 right edge. This is allowed but produces W103.
@@ -197,12 +223,12 @@ Issues have a code, a severity, an English message and a location.
 | Code | Rule |
 |------|------|
 | E001 | The document is not structurally readable: not JSON (the message gives the line and column), not an object, `format` wrong, `version` missing or not an integer (or below 1), a required field missing, or a field of the wrong JSON type (for example `rows` that is not an array of strings) |
-| E002 | Duplicate id within the palette, the motifs or the mappings (reported for every repeat after the first) |
-| E003 | Unknown reference: band → motif, band → mapping, mapping row → palette colour |
+| E002 | Duplicate id within the palette, within the motifs, or within one motif's mappings (reported for every repeat after the first) |
+| E003 | Unknown reference: band → motif; band → mapping that its motif does not have; mapping `colors` → palette colour; a mapping row digit with no colour at that position |
 | E004 | A motif has no rows, empty rows, or rows of different lengths |
 | E005 | A motif contains a character other than `0`, `1`, `2` (including `.`, reserved for shaping) |
-| E006 | A mapping has no rows, or a row with fewer than 2 or more than 3 entries |
-| E007 | A motif row uses `2` but the mapping row applied to it has no accent. Reported once per band, motif row and mapping row combination |
+| E006 | A motif has no mappings; a mapping's `colors` is empty, has more than 10 entries or lists a colour twice; a mapping's number of rows differs from its motif's height (not checked when the motif has E004); a mapping row that is not 2 or 3 digits |
+| E007 | A motif row uses `2` but the mapping row for it has no accent digit. Checked for every mapping of the motif, whether or not a band uses it, and reported once per mapping and row |
 | E008 | Out-of-range value: `hex` not `#rrggbb`; a gauge value ≤ 0; `cast_on` not a whole number in 1–1000; a motif over 200 × 200; more than 1000 chart rows; `offset` not a whole number; `times` not a whole number ≥ 1; `float_notice` < 2, not whole, or greater than `float_warning`; `max_colors_per_row` < 1; `min_contrast` outside 0–100; an id that does not match the identifier pattern; a pattern palette with fewer than 2 colours |
 
 E001 is checked first. When a document has E001 issues, the other checks do
@@ -270,8 +296,14 @@ width: multiples of their least common multiple, up to 1000. For example,
 
 Compute CIELAB L* (D65) of each colour. A notice is raised when the L*
 difference between a mapping row's background and its foreground, or its
-background and its accent, is below `min_contrast`. A slot that uses the
-background colour itself is not compared (a solid row is deliberate).
+background and its accent, is below `min_contrast`. Not compared:
+
+- a slot that uses the background colour itself (a solid row is
+  deliberate);
+- a slot the motif's row does not use, such as the foreground of an
+  all-background row or the accent of a row without `2`.
+
+Checked for every mapping, whether or not a band uses it.
 
 ### Issue locations
 
@@ -283,7 +315,7 @@ type Issue = {
   location: {
     band?: number;            // 0-based index into bands
     motif?: string;           // motif id
-    mapping?: string;         // mapping id
+    mapping?: string;         // mapping id, always together with motif
     color?: string;           // palette id
     row?: number;             // chart row, 1-based from the bottom
     stitch?: number;          // 1-based from the right
@@ -296,8 +328,9 @@ type Issue = {
 ```
 
 `color`, `motifRow`, `mappingRow` and `path` extend the specification's
-location so that, for example, E007 can point at the motif row, the band and
-the mapping row together.
+location so that, for example, E007 can point at the motif, the mapping and
+the row together. Because mapping ids are only unique within a motif, an
+issue about a mapping always names its motif too.
 
 ## Canonical form
 
@@ -309,6 +342,9 @@ minimal:
   ones, sorted by key (nested objects inside unknown fields too);
 - `meta`, `gauge`, `settings`, palette entries and bands on one line each;
 - one motif row and one mapping row per line;
+- a motif's `mappings` follow its `rows` inside the motif entry. Each
+  mapping starts on its own line with its `id`, `name` and `colors`,
+  followed by its rows one per line (see the [full example](#full-example));
 - whole numbers without a decimal point (`10`, not `10.0`);
 - defaults written out, except a band's `times`, which is omitted when it is
   `1` (`offset` is always written);
@@ -319,25 +355,26 @@ Files in any other layout are accepted and rewritten canonically on save.
 
 ## Library files
 
-Libraries are plain files of reusable motifs, mappings and palettes, so the
-community can grow them through pull requests.
+Libraries are plain files of reusable motifs (with their mappings) and
+palettes, so the community can grow them through pull requests.
 
 - Same envelope as a pattern, with `"format": "fairisle-library"` and
   `"version": 1`.
-- `meta` plus any of `palette`, `motifs` and `mappings`, with exactly the
+- `meta` plus either or both of `palette` and `motifs`, with exactly the
   schemas above. No `bands`, `gauge` or `cast_on` (they would be unknown
   fields, W106).
-- A mapping in a library may only reference palette colours defined in the
-  same file (E003 otherwise).
+- A mapping in a library may only use palette colours defined in the same
+  file (E003 otherwise).
 - Validated with the same codes as patterns, except that a library palette
   may have any number of colours.
 
 Projects stay self-contained: inserting a library item copies it into the
-project, and a pattern never references a library. When an imported item's
-id is already taken, it is renamed with a numeric suffix (`peerie-x` →
-`peerie-x-2`) and references inside the import follow. An item identical to
-the one already in the project (same id, same content) is reused rather than
-duplicated. A mapping brings the colours it uses with it.
+project, and a pattern never references a library. A motif comes with all
+of its mappings, and they bring the colours they use. When an imported
+colour or motif id is already taken, the item is renamed with a numeric
+suffix (`peerie-x` → `peerie-x-2`) and references inside the import follow.
+An item identical to the one already in the project (same id, same content)
+is reused rather than duplicated.
 
 ## Compatibility and versions
 
@@ -377,9 +414,21 @@ is the fixture `fixtures/hat-basic/input.fairisle.json`, in canonical form.
       "001100",
       "010010",
       "100001"
+    ], "mappings": [
+      { "id": "sunset", "colors": ["cream", "navy", "rust", "gold"], "rows": [
+        "01",
+        "02",
+        "03",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "solid", "rows": [
       "0"
+    ], "mappings": [
+      { "id": "plain", "colors": ["cream", "navy"], "rows": [
+        "01"
+      ] }
     ] },
     { "id": "flower", "rows": [
       "00010000",
@@ -387,21 +436,14 @@ is the fixture `fixtures/hat-basic/input.fairisle.json`, in canonical form.
       "01121100",
       "00111000",
       "00010000"
-    ] }
-  ],
-  "mappings": [
-    { "id": "sunset", "rows": [
-      ["cream", "navy"],
-      ["cream", "rust"],
-      ["cream", "gold"],
-      ["cream", "rust"],
-      ["cream", "navy"]
-    ] },
-    { "id": "flower-colors", "rows": [
-      ["cream", "rust", "gold"]
-    ] },
-    { "id": "plain", "rows": [
-      ["cream", "navy"]
+    ], "mappings": [
+      { "id": "flower-colors", "colors": ["cream", "rust", "gold"], "rows": [
+        "012",
+        "012",
+        "012",
+        "012",
+        "012"
+      ] }
     ] }
   ],
   "bands": [
