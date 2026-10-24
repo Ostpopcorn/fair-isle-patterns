@@ -626,6 +626,33 @@ label.check {
   min-width: 0;
 }
 
+/* The selected mapping, inside its motif's mappings card. */
+.sub-card {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.sub-card h3 {
+  margin: 4px 0 0;
+}
+
+.mapping-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.mapping-colors .color-select {
+  flex: 1;
+}
+
+select[aria-invalid='true'] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
 .color-select select {
   padding-left: 4px;
   min-width: 0;

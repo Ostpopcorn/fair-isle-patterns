@@ -1,9 +1,9 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { parse, serialize } from '../core';
+import { parse, serialize, validate } from '../core';
 import type { PatternDoc } from '../core/types';
 import { fixtureText, loadCore } from '../core/testing';
-import { updateBand, updateMapping } from '../model/doc';
+import { findMapping, findMotif, updateBand, updateMapping } from '../model/doc';
 import { Store } from './store';
 
 beforeAll(loadCore);
@@ -16,7 +16,7 @@ describe('store', () => {
     const edits: ((d: PatternDoc) => PatternDoc)[] = [
       (d) => updateBand(d, 2, { offset: 4 }),
       (d) => ({ ...d, cast_on: 96 }),
-      (d) => updateMapping(d, 'sunset', (m) => ({ ...m, rows: m.rows.slice(1) })),
+      (d) => updateMapping(d, 'peerie-x', 'sunset', (m) => ({ ...m, rows: m.rows.slice(1) })),
       (d) => ({ ...d, meta: { ...d.meta, name: 'Edited' } }),
       (d) => ({ ...d, bands: d.bands.slice(1) }),
     ];
@@ -73,7 +73,7 @@ describe('store', () => {
     const store = new Store(hat());
     store.analysis();
     const start = performance.now();
-    store.edit((d) => updateMapping(d, 'plain', (m) => ({ ...m, rows: [['gold', 'navy']] })));
+    store.edit((d) => updateMapping(d, 'solid', 'plain', (m) => ({ ...m, colors: ['gold', 'navy'] })));
     const chart = store.analysis().chart!;
     expect(performance.now() - start).toBeLessThan(100);
     const gold = chart.palette.indexOf('gold');
@@ -88,6 +88,40 @@ describe('store', () => {
     expect(store.isDirty()).toBe(true);
     store.undo();
     expect(store.isDirty()).toBe(false);
+  });
+});
+
+describe('motif commands', () => {
+  it('flipping, rolling and resizing a motif carry its mappings along', async () => {
+    const { store } = await import('./store');
+    const { motifCommands } = await import('../ui/views/motifCommands');
+    const rowsOf = () => findMapping(findMotif(store.get().doc, 'peerie-x'), 'sunset')!.rows;
+    store.load(updateMapping(hat(), 'peerie-x', 'sunset', (m) => ({ ...m, rows: ['01', '02', '03', '01', '01'] })));
+    store.ui({ motifId: 'peerie-x' });
+
+    // peerie-x is symmetric, so only the colours show the flip.
+    motifCommands.transform('flipV');
+    expect(rowsOf()).toEqual(['01', '01', '03', '02', '01']);
+    motifCommands.transform('flipH');
+    expect(rowsOf()).toEqual(['01', '01', '03', '02', '01']);
+    motifCommands.roll(0, 1);
+    expect(rowsOf()).toEqual(['01', '01', '01', '03', '02']);
+    motifCommands.roll(1, 0);
+    expect(rowsOf()).toEqual(['01', '01', '01', '03', '02']);
+    motifCommands.resize(6, 7);
+    expect(rowsOf()).toEqual(['01', '01', '01', '03', '02', '02', '02']);
+    motifCommands.resize(6, 4);
+    expect(rowsOf()).toEqual(['01', '01', '01', '03']);
+    expect(validate(store.get().doc).filter((i) => i.severity === 'error')).toEqual([]);
+  });
+});
+
+describe('old files', () => {
+  it('recognises patterns saved before mappings moved into motifs', async () => {
+    const { isOldFormat } = await import('./actions');
+    expect(isOldFormat(fixtureText('e001-old-format'))).toBe(true);
+    expect(isOldFormat(fixtureText('hat-basic'))).toBe(false);
+    expect(isOldFormat('not json')).toBe(false);
   });
 });
 

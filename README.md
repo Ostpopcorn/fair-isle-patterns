@@ -3,9 +3,9 @@
 A browser-based, open-source pattern builder for stranded fair isle knitting
 that understands the rules of the craft, not just a colour grid.
 
-- **Shape and colour are separate layers.** A motif is pure shape
-  (background, foreground, accent). Reusable colour mappings decide which
-  yarns fill it, row by row.
+- **Shape and colour are separate layers.** A motif is a shape
+  (background, foreground, accent). Each motif's colour mappings pick up to
+  10 of the project's colours and decide which fill it, row by row.
 - **Fair isle-aware checks run as you draw**: float length (in the round,
   so floats wrap), colours per row, repeat fit with one-click cast-on fixes,
   missing accents and lightness contrast.
@@ -22,8 +22,10 @@ themselves, version their work and like to tinker.
 
 - Motif editor: pencil, fill, line, rectangle and select tools; mirrored
   drawing; flips, rotations and wrap-around rolls; copy, cut and paste
-  between motifs; live tiled preview coloured with any mapping.
-- Mapping editor with reverse and shift helpers; palette with yarn names;
+  between motifs; shown in black and white or in any of the motif's
+  mappings, with a live tiled preview.
+- Mapping editor under each motif, with reverse and shift helpers; palette
+  with yarn names;
   band stack with offsets, vertical repeats, spacers and keyboard
   reordering.
 - Issues panel grouped by severity, with highlighting of every offending
@@ -33,8 +35,8 @@ themselves, version their work and like to tinker.
   browser, recent projects, unlimited undo.
 - Export to PNG, SVG and a printable PDF (A4 or US Letter) with the chart
   split across pages, a colour legend and a per-row colour table.
-- A CC0 starter library: peeries, OXO bands, stars, a neutral palette and
-  basic mappings.
+- A CC0 starter library: peeries, OXO bands and stars, each with
+  two-colour, light-on-dark and shaded mappings, and a neutral palette.
 - Keyboard shortcuts for everything (press `?`), light and dark themes,
   installable offline PWA.
 

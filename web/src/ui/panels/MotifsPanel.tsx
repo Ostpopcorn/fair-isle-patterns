@@ -1,9 +1,10 @@
 import { useState } from 'preact/hooks';
-import { bandsUsingMotif, deleteMotif, duplicateMotif, findMotif, renameMotif, slugify, uniqueId, updateMotif, withOptional } from '../../model/doc';
+import { bandsUsingMotif, blankMotif, deleteMotif, duplicateMotif, findMotif, renameMotif, slugify, uniqueId, updateMotif, withOptional } from '../../model/doc';
 import { blank } from '../../model/motif';
 import { store, type AppState } from '../../state/store';
-import { MotifThumb, NumberField } from '../components/common';
+import { MotifThumb, NumberField, mappingColors } from '../components/common';
 import { IdField } from '../components/IdField';
+import { MotifMappings } from './MotifMappings';
 
 export function MotifsPanel({ s }: { s: AppState }) {
   const doc = s.doc;
@@ -11,14 +12,14 @@ export function MotifsPanel({ s }: { s: AppState }) {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: '', width: 8, height: 7 });
 
-  const select = (id: string) => store.ui({ motifId: id, view: 'motif', selection: null, screen: 'view' });
+  const select = (id: string) => store.ui({ motifId: id, mappingId: null, view: 'motif', selection: null, screen: 'view' });
 
   const create = () => {
     const w = Math.round(draft.width);
     const h = Math.round(draft.height);
     if (!(w >= 1 && w <= 200 && h >= 1 && h <= 200)) return;
     const id = uniqueId(slugify(draft.name || 'motif', 'motif'), doc.motifs.map((m) => m.id));
-    store.edit((d) => ({ ...d, motifs: [...d.motifs, withOptional({ id, rows: blank(w, h) }, 'name', draft.name)] }));
+    store.edit((d) => ({ ...d, motifs: [...d.motifs, withOptional(blankMotif(d, id, blank(w, h)), 'name', draft.name)] }));
     setCreating(false);
     setDraft({ name: '', width: 8, height: 7 });
     select(id);
@@ -34,7 +35,7 @@ export function MotifsPanel({ s }: { s: AppState }) {
         </button>
       </div>
       <p class="small muted" style={{ margin: 0 }}>
-        A motif is pure shape: background, foreground and accent. Mappings decide the colours.
+        A motif is shape: background, foreground and accent. Its mappings decide the colours, row by row.
       </p>
 
       {creating && (
@@ -70,7 +71,7 @@ export function MotifsPanel({ s }: { s: AppState }) {
           const uses = bandsUsingMotif(doc, m.id).length;
           return (
             <button key={m.id} class="list-item" aria-current={m.id === s.ui.motifId} onClick={() => select(m.id)}>
-              <MotifThumb rows={m.rows} maxSize={36} label={m.id} />
+              <MotifThumb rows={m.rows} colors={m.mappings[0] && mappingColors(m.mappings[0], doc.palette)} grayscale={s.ui.grayscale} maxSize={36} label={m.id} />
               <span class="grow">
                 {m.name ?? m.id}
                 <br />
@@ -129,6 +130,7 @@ export function MotifsPanel({ s }: { s: AppState }) {
           </div>
         </div>
       )}
+      {motif && <MotifMappings s={s} motif={motif} />}
     </div>
   );
 }

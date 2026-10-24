@@ -17,9 +17,28 @@ function fail(title: string, error: unknown): void {
   store.ui({ dialog: { kind: 'message', title, body: error instanceof Error ? error.message : String(error) } });
 }
 
+/** Whether text is a pattern saved before colour mappings moved into their
+ * motifs: a top-level mappings list and motifs without their own. Such files
+ * are not converted; they are reported clearly instead. */
+export function isOldFormat(text: string): boolean {
+  try {
+    const v = JSON.parse(text) as { mappings?: unknown; motifs?: unknown };
+    return Array.isArray(v.mappings) && Array.isArray(v.motifs) && v.motifs.some((m) => m && typeof m === 'object' && !('mappings' in m));
+  } catch {
+    return false;
+  }
+}
+
+export const OLD_FORMAT_MESSAGE =
+  'It was saved by an earlier version of the app, before colour mappings moved into their motifs, and this version cannot open it. Start a new pattern, or open another file.';
+
 /** Opens file text as a pattern, or a library in the library browser. */
 export function openText(text: string, file: FileRef | null, sessionId?: string, savedText?: string | null): boolean {
   const result = parse(text);
+  if (!result.doc && isOldFormat(text)) {
+    store.ui({ dialog: { kind: 'message', title: `Cannot open ${file?.name ?? 'this pattern'}`, body: OLD_FORMAT_MESSAGE } });
+    return false;
+  }
   if (!result.doc) {
     store.ui({
       dialog: {

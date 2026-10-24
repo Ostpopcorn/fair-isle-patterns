@@ -22,7 +22,7 @@ export function Header({ s }: { s: AppState }) {
     { label: 'Export…', title: 'Export PNG, SVG or PDF (Ctrl+E)', run: () => store.ui({ dialog: { kind: 'export' } }) },
     {
       label: 'Library…',
-      title: 'Insert motifs, mappings and colours from a library',
+      title: 'Insert motifs (with their mappings) and colours from a library',
       run: () => store.ui({ dialog: { kind: 'library', source: null } }),
     },
   ];

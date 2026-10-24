@@ -5,7 +5,6 @@ import { Header } from './Header';
 import { IssuesPanel } from './IssuesPanel';
 import { Dialogs } from './dialogs/Dialogs';
 import { BandsPanel } from './panels/BandsPanel';
-import { MappingsPanel } from './panels/MappingsPanel';
 import { MotifsPanel } from './panels/MotifsPanel';
 import { PalettePanel } from './panels/PalettePanel';
 import { ProjectPanel } from './panels/ProjectPanel';
@@ -18,7 +17,6 @@ import { handleKey } from './shortcuts';
 const PANELS: { id: Panel; label: string }[] = [
   { id: 'bands', label: 'Bands' },
   { id: 'motifs', label: 'Motifs' },
-  { id: 'mappings', label: 'Mappings' },
   { id: 'palette', label: 'Palette' },
   { id: 'project', label: 'Project' },
 ];
@@ -75,7 +73,6 @@ export function App() {
   const panel = {
     bands: <BandsPanel s={s} />,
     motifs: <MotifsPanel s={s} />,
-    mappings: <MappingsPanel s={s} />,
     palette: <PalettePanel s={s} />,
     project: <ProjectPanel s={s} />,
   }[s.ui.panel];

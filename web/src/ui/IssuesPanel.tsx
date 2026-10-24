@@ -27,8 +27,9 @@ function reveal(issue: Issue, s: AppState): void {
   if (chartIssue || ((l.band !== undefined) && issue.severity !== 'error')) {
     // Highlights are drawn on the chart.
     store.ui({ issue, view: 'chart', bandIndex: l.band ?? s.ui.bandIndex, screen: 'view' });
-  } else if (l.mapping && issue.code !== 'E003') {
-    store.ui({ issue, panel: 'mappings', mappingId: l.mapping, screen: 'edit' });
+  } else if (l.motif && l.mapping && l.band === undefined) {
+    // A problem inside one of a motif's mappings.
+    store.ui({ issue, panel: 'motifs', motifId: l.motif, mappingId: l.mapping, screen: 'edit' });
   } else if (l.motif && (issue.code === 'E004' || issue.code === 'E005' || issue.code === 'E008')) {
     store.ui({ issue, panel: 'motifs', motifId: l.motif, view: 'motif', screen: 'view' });
   } else if (l.band !== undefined) {
@@ -37,6 +38,8 @@ function reveal(issue: Issue, s: AppState): void {
     store.ui({ issue, panel: 'palette', screen: 'edit' });
   } else if (l.path?.startsWith('gauge') || l.path?.startsWith('cast_on') || l.path?.startsWith('settings')) {
     store.ui({ issue, panel: 'project', screen: 'edit' });
+  } else if (l.motif) {
+    store.ui({ issue, panel: 'motifs', motifId: l.motif, screen: 'edit' });
   } else {
     store.ui({ issue });
   }

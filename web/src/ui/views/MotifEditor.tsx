@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Motif } from '../../core/types';
 import { bandsUsingMotif, findMapping, updateMotif } from '../../model/doc';
+import { displayHex } from '../../model/color';
 import * as M from '../../model/motif';
 import { store, type AppState, type Tool } from '../../state/store';
-import { NumberField, paintMotif, symbolColors } from '../components/common';
+import { NumberField, blackAndWhite, mappingColors, paintMotif, symbolColors, type MotifColors } from '../components/common';
 import { motifCommands } from './motifCommands';
 import { zoomBus } from '../shortcuts';
 import { ZoomControls } from './ZoomControls';
@@ -72,6 +73,12 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
     return () => zoomBus.removeEventListener('zoom', onZoom);
   }, []);
 
+  // The colouring chosen under the tiled preview: black and white unless a
+  // mapping of this motif is picked.
+  const colouring = findMapping(motif, ui.motifColors);
+  const colors: MotifColors = colouring ? mappingColors(colouring, s.doc.palette) : blackAndWhite;
+  const hexAt = (row: number, symbol: number) => displayHex(colors(row, symbol), ui.grayscale);
+
   const baseCell = Math.max(6, Math.min(40, Math.floor(Math.min(fit.w / Math.max(1, w), fit.h / Math.max(1, h)))));
   const cell = Math.max(3, Math.round(baseCell * zoom));
 
@@ -85,12 +92,12 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
     canvas.style.height = `${h * cell}px`;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const colors = symbolColors();
     const previewSet = new Set(preview?.map((c) => `${c.x},${c.y}`));
     for (let y = 0; y < h; y++) {
+      const rowHex = [0, 1, 2].map((sym) => hexAt(y, sym));
       for (let x = 0; x < w; x++) {
         const sym = previewSet.has(`${x},${y}`) ? (drag.current?.symbol ?? ui.symbol) : rows[y][x];
-        ctx.fillStyle = colors[Number(sym)] ?? '#f0f';
+        ctx.fillStyle = rowHex[Number(sym)] ?? '#f0f';
         ctx.fillRect(x * cell, (h - 1 - y) * cell, cell, cell);
       }
     }
@@ -107,7 +114,7 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
     }
     ctx.stroke();
     // Centre lines for mirrored drawing.
-    ctx.strokeStyle = colors[2];
+    ctx.strokeStyle = symbolColors()[2];
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -241,7 +248,7 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
                 title={`${sym.label} (${sym.id})`}
                 onClick={() => store.ui({ symbol: sym.id })}
               >
-                <span class="sym" style={{ background: `var(${['--sym-bg', '--sym-fg', '--sym-accent'][Number(sym.id)]})` }} /> {sym.label}
+                <span class="sym" style={{ background: hexAt(hover?.y ?? 0, Number(sym.id)) }} /> {sym.label}
               </button>
             ))}
           </div>
@@ -303,9 +310,9 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
             </button>
           </span>
           <span class="row small">
-            <NumberField ariaLabel="Motif width" value={w} min={1} max={200} width="64px" onChange={(v) => resize(motif, v, h)} />
+            <NumberField ariaLabel="Motif width" value={w} min={1} max={200} width="64px" onChange={(v) => resize(v, h)} />
             ×
-            <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(motif, w, v)} />
+            <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(w, v)} />
           </span>
         </div>
         <div class="row">
@@ -330,43 +337,34 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
             onContextMenu={(e) => e.preventDefault()}
           />
         </div>
-        <TilePreview s={s} motif={motif} />
+        <TilePreview s={s} motif={motif} colors={colors} colouring={colouring?.id ?? null} />
       </div>
     </div>
   );
 }
 
-function resize(motif: Motif, w: number, h: number): void {
+function resize(w: number, h: number): void {
   if (!Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > 200 || h > 200) return;
-  store.edit((doc) => updateMotif(doc, motif.id, (m) => ({ ...m, rows: M.resize(m.rows, w, h) })), { coalesce: `resize-${motif.id}` });
+  motifCommands.resize(w, h, `resize-${store.get().ui.motifId}`);
   store.ui({ selection: null });
 }
 
-function TilePreview({ s, motif }: { s: AppState; motif: Motif }) {
+function TilePreview({ s, motif, colors, colouring }: { s: AppState; motif: Motif; colors: MotifColors; colouring: string | null }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const used = s.doc.bands.find((b) => b.motif === motif.id)?.mapping;
-  // previewMapping: null picks automatically, '' means symbols only.
-  const mappingId =
-    s.ui.previewMapping === ''
-      ? null
-      : findMapping(s.doc, s.ui.previewMapping)
-        ? s.ui.previewMapping
-        : (used ?? s.doc.mappings[0]?.id ?? null);
-  const mapping = findMapping(s.doc, mappingId);
   const w = M.width(motif.rows);
   const across = Math.max(3, Math.ceil(24 / Math.max(1, w)));
   const cell = Math.max(2, Math.min(16, Math.floor(320 / Math.max(1, w * across))));
   useLayoutEffect(() => {
-    if (ref.current) paintMotif(ref.current, motif.rows, { cell, mapping, doc: s.doc, grayscale: s.ui.grayscale, across, up: 2 });
+    if (ref.current) paintMotif(ref.current, motif.rows, { cell, colors, grayscale: s.ui.grayscale, across, up: 2 });
   });
   return (
     <aside class="tile-preview" aria-label="Tiled preview">
       <h3>Tiled preview</h3>
       <label class="field">
-        <span>Colour with mapping</span>
-        <select value={mappingId ?? ''} onChange={(e) => store.ui({ previewMapping: (e.currentTarget as HTMLSelectElement).value })}>
-          <option value="">Symbols only</option>
-          {s.doc.mappings.map((m) => (
+        <span>Colours</span>
+        <select aria-label="Colour the motif with" value={colouring ?? ''} onChange={(e) => store.ui({ motifColors: (e.currentTarget as HTMLSelectElement).value || null })}>
+          <option value="">Black and white</option>
+          {motif.mappings.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name ? `${m.name} (${m.id})` : m.id}
             </option>
@@ -375,7 +373,7 @@ function TilePreview({ s, motif }: { s: AppState; motif: Motif }) {
       </label>
       <canvas ref={ref} role="img" aria-label={`${across} by 2 repeats of the motif`} />
       <p class="small muted">
-        {across} × 2 repeats{mapping ? `, coloured row by row with “${mapping.id}”` : ''}. Right-click draws background.
+        {across} × 2 repeats, {colouring ? `coloured row by row with “${colouring}”` : 'in black and white with a red accent (not saved in the file)'}. Right-click draws background.
       </p>
     </aside>
   );

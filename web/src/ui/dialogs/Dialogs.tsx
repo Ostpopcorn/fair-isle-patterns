@@ -3,7 +3,7 @@ import type { Issue, LibraryDoc, Settings } from '../../core/types';
 import { importFromLibrary } from '../../model/library';
 import { DEFAULT_SETTINGS } from '../../model/doc';
 import { builtinLibraries } from '../../library';
-import { importLibraryFile, newPatternAction, openExample, openFileAction, restoreSession, toast } from '../../state/actions';
+import { importLibraryFile, isOldFormat, newPatternAction, openExample, openFileAction, restoreSession, toast } from '../../state/actions';
 import { download, fileNameFor, supportsFileSystemAccess } from '../../state/files';
 import { deleteSession, isSafari, recentSessions, type Session } from '../../state/persistence';
 import { loadPrefs, savePrefs } from '../../state/prefs';
@@ -12,7 +12,7 @@ import { chartPng, gaugePng } from '../../render/png';
 import { chartSvg } from '../../render/svg';
 import { PAPER, patternPdf, type Paper } from '../../render/patternPdf';
 import { SHORTCUTS } from '../shortcuts';
-import { Modal, MotifThumb, NumberField, Swatch } from '../components/common';
+import { Modal, MotifThumb, NumberField, Swatch, mappingColors } from '../components/common';
 
 const close = () => store.ui({ dialog: null });
 
@@ -75,12 +75,14 @@ function WelcomeDialog() {
     void recentSessions().then(setSessions);
     if (safari) savePrefs({ safariNoticeShown: true });
   }, []);
-  const last = sessions?.[0];
+  // Autosaves from before mappings moved into motifs cannot be opened.
+  const old = new Set(sessions?.filter((sess) => isOldFormat(sess.text)).map((sess) => sess.id));
+  const last = sessions?.find((sess) => !old.has(sess.id));
   return (
     <Modal title="Fair Isle Pattern Builder" onClose={close} wide>
       <p style={{ margin: 0 }}>
-        Design stranded fair isle bands knitted in the round. Motifs are pure shape; colour mappings fill them row by row; bands stack them into a chart,
-        checked for long floats, colours per row, repeat fit and contrast as you draw.
+        Design stranded fair isle bands knitted in the round. Motifs are shapes; each motif's colour mappings fill it row by row; bands stack them into
+        a chart, checked for long floats, colours per row, repeat fit and contrast as you draw.
       </p>
       {safari && (
         <div class="banner" role="note" style={{ borderRadius: '8px' }}>
@@ -112,17 +114,18 @@ function WelcomeDialog() {
         <div class="recent">
           {sessions.map((sess) => (
             <div class="row" key={sess.id}>
-              <button class="list-item" onClick={() => void restoreSession(sess)}>
+              <button class="list-item" disabled={old.has(sess.id)} onClick={() => void restoreSession(sess)}>
                 <span class="grow">
                   <strong>{sess.name}</strong>
                   <span class="small muted">
                     {' '}
                     · {sess.fileName ?? 'not saved to a file'} · {ago(sess.updatedAt)}
-                    {sess.savedText !== null && sess.savedText !== sess.text ? ' · unsaved changes' : ''}
+                    {old.has(sess.id) ? ' · made with an earlier version; it cannot be opened' : ''}
+                    {!old.has(sess.id) && sess.savedText !== null && sess.savedText !== sess.text ? ' · unsaved changes' : ''}
                   </span>
                 </span>
               </button>
-              {sess.handle && supportsFileSystemAccess() && (
+              {sess.handle && supportsFileSystemAccess() && !old.has(sess.id) && (
                 <button class="btn small" title="Open the file itself instead of the autosaved copy" onClick={() => void restoreSession(sess, true)}>
                   Open file
                 </button>
@@ -154,16 +157,19 @@ function HelpDialog() {
           <h3>How it works</h3>
           <ul class="small">
             <li>
-              <strong>Palette</strong>: the actual yarns.
+              <strong>Palette</strong>: the yarns the project uses.
             </li>
             <li>
-              <strong>Motifs</strong>: pure shape — background, foreground and accent cells.
+              <strong>Motifs</strong>: shapes of background, foreground and accent cells. The motif editor shows them in black and white unless you pick
+              one of the motif's mappings under the tiled preview.
             </li>
             <li>
-              <strong>Mappings</strong>: which yarns fill background, foreground and accent, row by row. A mapping shorter than a motif cycles.
+              <strong>Mappings</strong>: each belongs to one motif. It picks up to 10 palette colours and says which fill background, foreground and accent
+              on every row of that motif. Edit them in the Motifs tab.
             </li>
             <li>
-              <strong>Bands</strong>: stacked bottom to top; each combines a motif, a mapping, a sideways offset and a number of vertical repeats.
+              <strong>Bands</strong>: stacked bottom to top; each combines a motif, one of its mappings, a sideways offset and a number of vertical
+              repeats.
             </li>
           </ul>
           <p class="small">
@@ -354,33 +360,27 @@ function LibraryDialog({ s, dialog }: { s: AppState; dialog: Extract<Dialog, { k
     ? [{ name: dialog.fileName ?? dialog.source.meta.name, doc: dialog.source }]
     : builtins.map((b) => ({ name: b.doc.meta.name, doc: b.doc }));
   const [tab, setTab] = useState(0);
-  const [picked, setPicked] = useState<Record<string, Set<string>>>({ colors: new Set(), motifs: new Set(), mappings: new Set() });
+  const [picked, setPicked] = useState<Record<string, Set<string>>>({ colors: new Set(), motifs: new Set() });
   const lib = sources[Math.min(tab, sources.length - 1)]?.doc;
-  const toggle = (kind: 'colors' | 'motifs' | 'mappings', id: string) => {
+  const toggle = (kind: 'colors' | 'motifs', id: string) => {
     const next = new Set(picked[kind]);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setPicked({ ...picked, [kind]: next });
   };
-  const count = picked.colors.size + picked.motifs.size + picked.mappings.size;
+  const count = picked.colors.size + picked.motifs.size;
   const insert = () => {
     if (!lib) return;
-    const result = importFromLibrary(store.get().doc, lib, {
-      colors: [...picked.colors],
-      motifs: [...picked.motifs],
-      mappings: [...picked.mappings],
-    });
+    const result = importFromLibrary(store.get().doc, lib, { colors: [...picked.colors], motifs: [...picked.motifs] });
     store.edit(() => result.doc);
-    const added = result.added.colors.length + result.added.motifs.length + result.added.mappings.length;
+    const added = result.added.colors.length + result.added.motifs.length;
     const renamed = result.renamed.map((r) => `${r.from} → ${r.to}`).join(', ');
     toast(added ? `Added ${added} item${added > 1 ? 's' : ''}${renamed ? ` (renamed ${renamed})` : ''}` : 'Everything selected was already in the project');
-    if (result.added.motifs[0]) store.ui({ motifId: result.added.motifs[0] });
-    if (result.added.mappings[0]) store.ui({ mappingId: result.added.mappings[0] });
-    setPicked({ colors: new Set(), motifs: new Set(), mappings: new Set() });
+    if (result.added.motifs[0]) store.ui({ motifId: result.added.motifs[0], mappingId: null });
+    setPicked({ colors: new Set(), motifs: new Set() });
     close();
   };
-  const selectAll = () => lib && setPicked({ colors: new Set(lib.palette.map((c) => c.id)), motifs: new Set(lib.motifs.map((m) => m.id)), mappings: new Set(lib.mappings.map((m) => m.id)) });
-  const twoColour = s.doc.mappings[0];
+  const selectAll = () => lib && setPicked({ colors: new Set(lib.palette.map((c) => c.id)), motifs: new Set(lib.motifs.map((m) => m.id)) });
 
   return (
     <Modal
@@ -408,8 +408,8 @@ function LibraryDialog({ s, dialog }: { s: AppState; dialog: Extract<Dialog, { k
       }
     >
       <p class="small muted" style={{ margin: 0 }}>
-        Items are copied into the project, so the pattern file stays self-contained. A mapping brings the colours it uses; an item whose id is taken is
-        renamed (peerie-x → peerie-x-2).
+        Items are copied into the project, so the pattern file stays self-contained. A motif brings its mappings and the colours they use; an item whose
+        id is taken is renamed (peerie-x → peerie-x-2).
       </p>
       {sources.length > 1 && (
         <div class="tabs" role="tablist">
@@ -427,32 +427,20 @@ function LibraryDialog({ s, dialog }: { s: AppState; dialog: Extract<Dialog, { k
           <div class="lib-grid">
             {lib.motifs.map((m) => (
               <button key={m.id} class="lib-item" aria-pressed={picked.motifs.has(m.id)} onClick={() => toggle('motifs', m.id)}>
-                <MotifThumb rows={m.rows} maxSize={120} across={(m.rows[0]?.length ?? 1) < 10 ? 3 : 2} mapping={twoColour} doc={s.doc} grayscale={s.ui.grayscale} label={m.name ?? m.id} />
+                <MotifThumb
+                  rows={m.rows}
+                  maxSize={120}
+                  across={(m.rows[0]?.length ?? 1) < 10 ? 3 : 2}
+                  colors={m.mappings[0] && mappingColors(m.mappings[0], lib.palette)}
+                  grayscale={s.ui.grayscale}
+                  label={m.name ?? m.id}
+                />
                 <span class="small">
                   <strong>{m.name ?? m.id}</strong> <span class="muted">{m.rows[0]?.length}×{m.rows.length}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-      {lib && lib.mappings.length > 0 && (
-        <>
-          <h3>Mappings</h3>
-          <div class="lib-grid">
-            {lib.mappings.map((m) => (
-              <button key={m.id} class="lib-item" aria-pressed={picked.mappings.has(m.id)} onClick={() => toggle('mappings', m.id)}>
-                <span style={{ display: 'grid', gap: '2px' }}>
-                  {[...m.rows].reverse().map((row, i) => (
-                    <span key={i} class="row" style={{ gap: '2px' }}>
-                      {row.map((id, j) => (
-                        <Swatch key={j} hex={lib.palette.find((c) => c.id === id)?.hex ?? '#ff00ff'} grayscale={s.ui.grayscale} size={14} />
-                      ))}
-                    </span>
-                  ))}
-                </span>
-                <span class="small">
-                  <strong>{m.name ?? m.id}</strong>
+                  <br />
+                  <span class="muted">
+                    {m.mappings.length} mapping{m.mappings.length === 1 ? '' : 's'}: {m.mappings.map((p) => p.name ?? p.id).join(', ')}
+                  </span>
                 </span>
               </button>
             ))}

@@ -70,7 +70,7 @@ export function ProjectPanel({ s }: { s: AppState }) {
           Pattern settings…
         </button>
       </div>
-      {Object.keys(doc).some((k) => !['format', 'version', 'meta', 'gauge', 'cast_on', 'settings', 'palette', 'motifs', 'mappings', 'bands'].includes(k)) && (
+      {Object.keys(doc).some((k) => !['format', 'version', 'meta', 'gauge', 'cast_on', 'settings', 'palette', 'motifs', 'bands'].includes(k)) && (
         <p class="small muted">This file has fields this version does not know; they are kept when you save.</p>
       )}
     </div>

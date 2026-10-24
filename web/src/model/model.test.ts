@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { compile, parse, validate } from '../core';
-import type { LibraryDoc, PatternDoc } from '../core/types';
+import type { LibraryDoc, Mapping, PatternDoc } from '../core/types';
 import { fixtureText, loadCore } from '../core/testing';
 import { builtinLibraries } from '../library';
 import { grayForLightness, lightness, parseHex } from './color';
@@ -78,27 +78,72 @@ describe('motif operations', () => {
 });
 
 describe('mapping helpers', () => {
-  const rows = [['a', 'b'], ['a', 'c'], ['a', 'd', 'e']];
+  const mapping: Mapping = { id: 'm', colors: ['a', 'b', 'c', 'd'], rows: ['01', '03', '031'] };
 
-  it('reverse applied twice returns the original mapping', () => {
-    expect(Map.reverse(Map.reverse(rows))).toEqual(rows);
-    expect(Map.reverse(rows)[0]).toEqual(['a', 'd', 'e']);
+  it('reads colours by position', () => {
+    expect(Map.digits('031')).toEqual([0, 3, 1]);
+    expect(Map.digits('0')).toBeNull();
+    expect(Map.digits('0a')).toBeNull();
+    expect(Map.slotColor(mapping, 2, 1)).toBe('d');
+    expect(Map.slotColor(mapping, 2, 2)).toBe('b');
+    expect(Map.slotColor(mapping, 0, 2)).toBeNull();
   });
 
-  it('shifts up and down with wrap-around', () => {
-    expect(Map.shiftUp(rows)).toEqual([['a', 'd', 'e'], ['a', 'b'], ['a', 'c']]);
-    expect(Map.shiftDown(Map.shiftUp(rows))).toEqual(rows);
+  it('reverse applied twice returns the original rows', () => {
+    expect(Map.reverse(Map.reverse(mapping.rows))).toEqual(mapping.rows);
+    expect(Map.reverse(mapping.rows)[0]).toBe('031');
   });
 
-  it('removing the accent drops the third entry', () => {
-    expect(Map.setEntry(rows, 2, 2, null)[2]).toEqual(['a', 'd']);
-    expect(Map.setEntry(rows, 0, 2, 'z')[0]).toEqual(['a', 'b', 'z']);
+  it('shifts and rolls with wrap-around, like the motif', () => {
+    expect(Map.shiftUp(mapping.rows)).toEqual(['031', '01', '03']);
+    expect(Map.shiftDown(Map.shiftUp(mapping.rows))).toEqual(mapping.rows);
+    const motif = ['100', '010', '001'];
+    expect(Map.rollRows(mapping.rows, 1)).toEqual(Map.shiftUp(mapping.rows));
+    // Rolling a motif and its mapping by the same amount keeps rows together.
+    expect(M.roll(motif, 0, 2).map((r, i) => r + Map.rollRows(mapping.rows, 2)[i])).toEqual(
+      Map.rollRows(motif.map((r, i) => r + mapping.rows[i]), 2),
+    );
   });
 
-  it('removing the accent from a row shows E007 for bands that need it', () => {
+  it('sets and removes slots', () => {
+    expect(Map.setSlot(mapping, 2, 2, null).rows[2]).toBe('03');
+    expect(Map.setSlot(mapping, 0, 2, 3).rows[0]).toBe('013');
+    expect(Map.setSlot(mapping, 1, 0, 1).rows[1]).toBe('13');
+    expect(Map.setSlot(mapping, 0, 2, null)).toBe(mapping);
+  });
+
+  it('edits the colour list; rows follow the positions', () => {
+    expect(Map.replaceColor(mapping, 3, 'x').colors).toEqual(['a', 'b', 'c', 'x']);
+    // A colour already in the list is not added twice.
+    expect(Map.replaceColor(mapping, 3, 'a')).toBe(mapping);
+    expect(Map.addColor(mapping, 'a')).toBe(mapping);
+    expect(Map.addColor(mapping, 'e').colors).toHaveLength(5);
+    const ten: Mapping = { ...mapping, colors: 'abcdefghij'.split('') };
+    expect(Map.addColor(ten, 'k')).toBe(ten);
+    // c (position 2) is unused; removing it moves d down to position 2.
+    expect(Map.usesPosition(mapping, 2)).toBe(false);
+    expect(Map.removeColor(mapping, 2)).toEqual({ ...mapping, colors: ['a', 'b', 'd'], rows: ['01', '02', '021'] });
+    // A colour a row uses stays.
+    expect(Map.removeColor(mapping, 1)).toBe(mapping);
+  });
+
+  it('fits rows to a new motif height at the top', () => {
+    expect(Map.fitRows(mapping.rows, 5)).toEqual(['01', '03', '031', '031', '031']);
+    expect(Map.fitRows(mapping.rows, 1)).toEqual(['01']);
+  });
+
+  it('the default mapping uses the first three palette colours', () => {
+    const palette = hat().palette;
+    expect(Map.defaultMapping('default', palette, 2)).toEqual({ id: 'default', name: 'Default', colors: ['cream', 'navy', 'rust'], rows: ['012', '012'] });
+    expect(Map.defaultMapping('default', palette.slice(0, 2), 1).rows).toEqual(['01']);
+  });
+
+  it('removing an accent that the motif needs gives E007', () => {
     const doc = hat();
-    const edited = D.updateMapping(doc, 'flower-colors', (m) => ({ ...m, rows: Map.setEntry(m.rows, 0, 2, null) }));
-    expect(validate(edited).filter((i) => i.code === 'E007').length).toBeGreaterThan(0);
+    const edited = D.updateMapping(doc, 'flower', 'flower-colors', (m) => Map.setSlot(m, 2, 2, null));
+    expect(validate(edited).filter((i) => i.code === 'E007').map((i) => i.location)).toEqual([
+      { motif: 'flower', mapping: 'flower-colors', motifRow: 3, mappingRow: 3 },
+    ]);
   });
 });
 
@@ -116,6 +161,17 @@ describe('document helpers', () => {
     const doc = D.newPattern();
     expect(validate(doc)).toEqual([]);
     expect(compile(doc)?.height).toBe(9);
+    for (const m of doc.motifs) expect(m.mappings.map((p) => p.colors)).toEqual([['cream', 'navy', 'rust']]);
+  });
+
+  it('a new motif starts with the first three palette colours', () => {
+    const doc = hat();
+    const motif = D.blankMotif(doc, 'new', ['0000', '0000']);
+    expect(motif.mappings).toEqual([{ id: 'default', name: 'Default', colors: ['cream', 'navy', 'rust'], rows: ['012', '012'] }]);
+    const { doc: next, id } = D.addMapping(doc, 'peerie-x', 'Blue');
+    expect(id).toBe('blue');
+    expect(D.findMapping(D.findMotif(next, 'peerie-x'), 'blue')).toEqual({ id: 'blue', name: 'Blue', colors: ['cream', 'navy', 'rust'], rows: Array(5).fill('012') });
+    expect(validate(next).some((i) => i.severity === 'error')).toBe(false);
   });
 
   it('renaming an id updates references', () => {
@@ -123,23 +179,48 @@ describe('document helpers', () => {
     const m = D.renameMotif(doc, 'solid', 'plain-row');
     expect('doc' in m && m.doc.bands.filter((b) => b.motif === 'plain-row')).toHaveLength(2);
     const c = D.renameColor(doc, 'navy', 'midnight');
-    expect('doc' in c && c.doc.mappings.find((x) => x.id === 'plain')!.rows[0]).toEqual(['cream', 'midnight']);
-    expect(D.renameMapping(doc, 'plain', 'sunset')).toEqual({ error: 'The id “sunset” is already used.' });
-    expect('error' in D.renameMapping(doc, 'plain', 'Bad Id')).toBe(true);
+    expect('doc' in c && D.findMapping(D.findMotif(c.doc, 'solid'), 'plain')!.colors).toEqual(['cream', 'midnight']);
+    const p = D.renameMapping(doc, 'solid', 'plain', 'calm');
+    expect('doc' in p && p.doc.bands.map((b) => b.mapping)).toEqual(['sunset', 'calm', 'flower-colors', 'calm']);
+    // Mapping ids are only unique within their motif.
+    const twice = D.addMapping(doc, 'solid', 'Other').doc;
+    expect(D.renameMapping(twice, 'solid', 'other', 'plain')).toEqual({ error: 'The id “plain” is already used by another mapping of “solid”.' });
+    expect('doc' in D.renameMapping(doc, 'solid', 'plain', 'sunset')).toBe(true);
+    expect('error' in D.renameMapping(doc, 'solid', 'plain', 'Bad Id')).toBe(true);
     // The renamed documents stay valid.
-    if ('doc' in m) expect(validate(m.doc).some((i) => i.severity === 'error')).toBe(false);
+    for (const r of [m, c, p]) if ('doc' in r) expect(validate(r.doc).some((i) => i.severity === 'error')).toBe(false);
   });
 
   it('deleting a motif used by a band is blocked, listing the bands', () => {
     const result = D.deleteMotif(hat(), 'solid');
     expect('blocked' in result && result.blocked).toMatch(/band 2 \(rows 6–6\), band 4 \(rows 12–13\)/);
-    const free = D.deleteMotif({ ...hat(), motifs: [...hat().motifs, { id: 'unused', rows: ['1'] }] }, 'unused');
+    const free = D.deleteMotif({ ...hat(), motifs: [...hat().motifs, D.blankMotif(hat(), 'unused', ['1'])] }, 'unused');
     expect('doc' in free).toBe(true);
+  });
+
+  it('deleting a mapping is blocked while bands use it, or when it is the last one', () => {
+    const used = D.deleteMapping(hat(), 'solid', 'plain');
+    expect('blocked' in used && used.blocked).toMatch(/band 2/);
+    const { doc } = D.addMapping(hat(), 'solid', 'Spare');
+    const spare = D.deleteMapping(doc, 'solid', 'spare');
+    expect('doc' in spare && D.findMotif(spare.doc, 'solid')!.mappings.map((m) => m.id)).toEqual(['plain']);
+    const lonely = { ...hat(), bands: [] };
+    const last = D.deleteMapping(lonely, 'solid', 'plain');
+    expect('blocked' in last && last.blocked).toMatch(/only mapping/);
   });
 
   it('deleting a colour used by a mapping is blocked, listing the mappings', () => {
     const result = D.deleteColor(hat(), 'navy');
-    expect('blocked' in result && result.blocked).toMatch(/“sunset”, “plain”/);
+    expect('blocked' in result && result.blocked).toMatch(/“peerie-x \/ sunset”, “solid \/ plain”/);
+  });
+
+  it('duplicating a motif copies its mappings', () => {
+    const { doc, id } = D.duplicateMotif(hat(), 'flower');
+    const copy = D.findMotif(doc, id)!;
+    expect(copy.mappings).toEqual(D.findMotif(hat(), 'flower')!.mappings);
+    const { doc: two, id: mid } = D.duplicateMapping(hat(), 'peerie-x', 'sunset');
+    expect(mid).toBe('sunset-copy');
+    expect(D.findMotif(two, 'peerie-x')!.mappings.map((m) => m.id)).toEqual(['sunset', 'sunset-copy']);
   });
 
   it('quick-add spacer reuses or creates an all-background motif', () => {
@@ -147,7 +228,7 @@ describe('document helpers', () => {
     const doc = { ...hat(), motifs: hat().motifs.filter((m) => m.id !== 'solid') };
     const { doc: next, id } = D.ensureSpacer(doc);
     expect(id).toBe('spacer');
-    expect(next.motifs.at(-1)).toEqual({ id: 'spacer', name: 'Spacer', rows: ['0'] });
+    expect(next.motifs.at(-1)).toEqual({ ...D.blankMotif(doc, 'spacer', ['0']), name: 'Spacer' });
   });
 
   it('band rows', () => {
@@ -156,43 +237,47 @@ describe('document helpers', () => {
 
   it('offset 7 on a 5-wide motif behaves exactly like offset 2', () => {
     const doc = D.newPattern();
-    const five: PatternDoc = { ...doc, cast_on: 10, motifs: [...doc.motifs, { id: 'five', rows: ['10010', '01100'] }] };
-    const at = (offset: number) => compile({ ...five, bands: [{ motif: 'five', mapping: 'two-colour', offset, times: 1 }] })!.cells;
+    const five: PatternDoc = { ...doc, cast_on: 10, motifs: [...doc.motifs, D.blankMotif(doc, 'five', ['10010', '01100'])] };
+    const at = (offset: number) => compile({ ...five, bands: [{ motif: 'five', mapping: 'default', offset, times: 1 }] })!.cells;
     expect(at(7)).toEqual(at(2));
     expect(at(-3)).toEqual(at(2));
   });
 });
 
 describe('library import', () => {
-  const library: LibraryDoc = {
+  const library = (): LibraryDoc => ({
     format: 'fairisle-library',
     version: 1,
     meta: { name: 'Test' },
     palette: [
       { id: 'cream', hex: '#efe6d2' },
       { id: 'navy', hex: '#000080' },
+      { id: 'rust', hex: '#a4452c' },
+      { id: 'gold', hex: '#d9a441' },
     ],
     motifs: [
-      { id: 'peerie-x', rows: ['1'] },
-      { id: 'flower', rows: ['00010000', '00111000', '01121100', '00111000', '00010000'] },
+      { id: 'peerie-x', rows: ['1'], mappings: [{ id: 'plain', colors: ['cream', 'navy'], rows: ['01'] }] },
+      hat().motifs.find((m) => m.id === 'flower')!,
     ],
-    mappings: [{ id: 'plain', rows: [['cream', 'navy']] }],
-  };
+  });
 
   it('renames clashing items with a numeric suffix and updates references', () => {
-    const result = importFromLibrary(hat(), library, { motifs: ['peerie-x', 'flower'], mappings: ['plain'] });
-    // flower is identical, so it is reused; peerie-x differs.
+    const result = importFromLibrary(hat(), library(), { motifs: ['peerie-x', 'flower'] });
+    // flower (with its mapping) is identical, so it is reused; peerie-x differs.
     expect(result.added.motifs).toEqual(['peerie-x-2']);
     // navy differs in colour, so it is renamed and the mapping follows.
     expect(result.added.colors).toEqual(['navy-2']);
-    expect(result.added.mappings).toEqual(['plain-2']);
-    expect(result.doc.mappings.find((m) => m.id === 'plain-2')!.rows).toEqual([['cream', 'navy-2']]);
+    expect(D.findMotif(result.doc, 'peerie-x-2')!.mappings).toEqual([{ id: 'plain', colors: ['cream', 'navy-2'], rows: ['01'] }]);
     expect(result.renamed).toEqual([
       { kind: 'colour', from: 'navy', to: 'navy-2' },
       { kind: 'motif', from: 'peerie-x', to: 'peerie-x-2' },
-      { kind: 'mapping', from: 'plain', to: 'plain-2' },
     ]);
     expect(validate(result.doc).filter((i) => i.severity === 'error')).toEqual([]);
+  });
+
+  it('copies picked colours on their own', () => {
+    const result = importFromLibrary(hat(), library(), { colors: ['navy', 'gold'] });
+    expect(result.added).toEqual({ colors: ['navy-2'], motifs: [] });
   });
 });
 
@@ -205,28 +290,27 @@ describe('starter library', () => {
     expect(ids).toContain('spacer');
     expect(ids.filter((id) => id.startsWith('oxo'))).toHaveLength(5);
     expect(motifs.filter((m) => m.rows.length <= 7 && m.id !== 'spacer').length).toBeGreaterThanOrEqual(10);
-    expect(libs().flatMap((l) => l.doc.palette)).toHaveLength(12);
-    expect(libs().flatMap((l) => l.doc.mappings).map((m) => m.id)).toEqual(
-      expect.arrayContaining(['two-colour', 'gradient-3', 'gradient-5-symmetric']),
-    );
+    expect(libs().find((l) => l.doc.motifs.length === 0)!.doc.palette).toHaveLength(12);
+    for (const m of motifs) {
+      expect(m.mappings.length, m.id).toBeGreaterThan(0);
+      if (m.id !== 'spacer') expect(m.mappings.map((p) => p.id), m.id).toEqual(expect.arrayContaining(['two-colour', 'light-on-dark']));
+    }
     for (const l of libs()) expect(l.doc.meta.license).toBe('CC0-1.0');
   });
 
-  it('every file is valid and every motif knits without float warnings', () => {
+  it('every file is valid and every motif knits without float warnings in each of its mappings', () => {
     for (const l of libs()) expect(validate(l.doc)).toEqual([]);
-    const neutral = libs().find((l) => l.doc.palette.length)!.doc;
     for (const lib of libs()) {
       for (const motif of lib.doc.motifs) {
         const w = motif.rows[0].length;
         const doc: PatternDoc = {
           ...D.newPattern(),
           cast_on: w * Math.max(1, Math.ceil(60 / w)),
-          palette: neutral.palette,
+          palette: lib.doc.palette,
           motifs: [motif],
-          mappings: [{ id: 'm', rows: [['natural', 'black', 'madder']] }],
-          bands: [{ motif: motif.id, mapping: 'm', offset: 0, times: 1 }],
+          bands: motif.mappings.map((p) => ({ motif: motif.id, mapping: p.id, offset: 0, times: 1 })),
         };
-        const bad = validate(doc).filter((i) => i.severity !== 'notice' && i.code !== 'W102');
+        const bad = validate(doc).filter((i) => i.severity !== 'notice');
         expect(bad, motif.id).toEqual([]);
       }
     }

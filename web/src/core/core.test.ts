@@ -11,6 +11,8 @@ import {
   ISSUE_KEYS,
   LAYOUT_KEYS,
   LOCATION_KEYS,
+  MAPPING_KEYS,
+  MOTIF_KEYS,
   PARSE_KEYS,
   PATTERN_KEYS,
   compile,
@@ -103,6 +105,15 @@ describe('types.ts stays in sync with the core', () => {
       for (const key of Object.keys(band)) expect(BAND_KEYS).toContain(key);
       expect(typeof band.offset).toBe('number');
       expect(typeof band.times).toBe('number');
+    }
+    for (const motif of (parsed.doc as PatternDoc).motifs) {
+      for (const key of Object.keys(motif)) expect(MOTIF_KEYS).toContain(key);
+      expect(motif.mappings.length).toBeGreaterThan(0);
+      for (const mapping of motif.mappings) {
+        for (const key of Object.keys(mapping)) expect(MAPPING_KEYS).toContain(key);
+        expect(mapping.rows).toHaveLength(motif.rows.length);
+        for (const row of mapping.rows) expect(typeof row).toBe('string');
+      }
     }
   });
 

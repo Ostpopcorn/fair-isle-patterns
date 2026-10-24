@@ -3,6 +3,7 @@
 // and keeps unknown fields.
 
 import type { Band, Mapping, Motif, PaletteColor, PatternDoc, Settings } from '../core/types';
+import { defaultMapping } from './mapping';
 
 export const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
@@ -42,9 +43,15 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const SPACER_ID = 'spacer';
+export const DEFAULT_MAPPING_ID = 'default';
 
 export function newPattern(settings: Settings = DEFAULT_SETTINGS, now = new Date()): PatternDoc {
   const stamp = now.toISOString().slice(0, 19) + 'Z';
+  const palette: PaletteColor[] = [
+    { id: 'cream', hex: '#efe6d2', name: 'Cream' },
+    { id: 'navy', hex: '#1f2a44', name: 'Navy' },
+    { id: 'rust', hex: '#a4452c', name: 'Rust' },
+  ];
   return {
     format: 'fairisle-pattern',
     version: 1,
@@ -52,19 +59,15 @@ export function newPattern(settings: Settings = DEFAULT_SETTINGS, now = new Date
     gauge: { stitches: 28, rows: 32, per_cm: 10 },
     cast_on: 120,
     settings: { ...settings },
-    palette: [
-      { id: 'cream', hex: '#efe6d2', name: 'Cream' },
-      { id: 'navy', hex: '#1f2a44', name: 'Navy' },
-    ],
+    palette,
     motifs: [
-      { id: 'peerie-x', name: 'Peerie X', rows: ['100001', '010010', '001100', '010010', '100001'] },
-      { id: SPACER_ID, name: 'Spacer', rows: ['0'] },
+      { id: 'peerie-x', name: 'Peerie X', rows: ['100001', '010010', '001100', '010010', '100001'], mappings: [defaultMapping(DEFAULT_MAPPING_ID, palette, 5)] },
+      { id: SPACER_ID, name: 'Spacer', rows: ['0'], mappings: [defaultMapping(DEFAULT_MAPPING_ID, palette, 1)] },
     ],
-    mappings: [{ id: 'two-colour', name: 'Two colour', rows: [['cream', 'navy']] }],
     bands: [
-      { motif: SPACER_ID, mapping: 'two-colour', offset: 0, times: 2 },
-      { motif: 'peerie-x', mapping: 'two-colour', offset: 0, times: 1 },
-      { motif: SPACER_ID, mapping: 'two-colour', offset: 0, times: 2 },
+      { motif: SPACER_ID, mapping: DEFAULT_MAPPING_ID, offset: 0, times: 2 },
+      { motif: 'peerie-x', mapping: DEFAULT_MAPPING_ID, offset: 0, times: 1 },
+      { motif: SPACER_ID, mapping: DEFAULT_MAPPING_ID, offset: 0, times: 2 },
     ],
   };
 }
@@ -75,20 +78,32 @@ export function bandsUsingMotif(doc: PatternDoc, id: string): number[] {
   return doc.bands.flatMap((b, i) => (b.motif === id ? [i] : []));
 }
 
-export function bandsUsingMapping(doc: PatternDoc, id: string): number[] {
-  return doc.bands.flatMap((b, i) => (b.mapping === id ? [i] : []));
+export function bandsUsingMapping(doc: PatternDoc, motifId: string, mappingId: string): number[] {
+  return doc.bands.flatMap((b, i) => (b.motif === motifId && b.mapping === mappingId ? [i] : []));
 }
 
-export function mappingsUsingColor(doc: PatternDoc, id: string): string[] {
-  return doc.mappings.filter((m) => m.rows.some((r) => r.includes(id))).map((m) => m.id);
+export interface MappingRef {
+  motif: string;
+  mapping: string;
+}
+
+/** Mappings whose colour list includes the colour. */
+export function mappingsUsingColor(doc: PatternDoc, id: string): MappingRef[] {
+  return doc.motifs.flatMap((m) => m.mappings.filter((p) => p.colors.includes(id)).map((p) => ({ motif: m.id, mapping: p.id })));
+}
+
+/** "peerie-x / sunset" */
+export function describeMapping(ref: MappingRef): string {
+  return `${ref.motif} / ${ref.mapping}`;
 }
 
 export function findMotif(doc: PatternDoc, id: string | null): Motif | undefined {
   return id === null ? undefined : doc.motifs.find((m) => m.id === id);
 }
 
-export function findMapping(doc: PatternDoc, id: string | null): Mapping | undefined {
-  return id === null ? undefined : doc.mappings.find((m) => m.id === id);
+/** A mapping of the given motif. */
+export function findMapping(motif: Motif | undefined, id: string | null): Mapping | undefined {
+  return id === null ? undefined : motif?.mappings.find((m) => m.id === id);
 }
 
 export function findColor(doc: PatternDoc, id: string): PaletteColor | undefined {
@@ -130,8 +145,14 @@ export function updateMotif(doc: PatternDoc, id: string, fn: (m: Motif) => Motif
   return { ...doc, motifs: doc.motifs.map((m) => (m.id === id ? fn(m) : m)) };
 }
 
-export function updateMapping(doc: PatternDoc, id: string, fn: (m: Mapping) => Mapping): PatternDoc {
-  return { ...doc, mappings: doc.mappings.map((m) => (m.id === id ? fn(m) : m)) };
+export function updateMapping(doc: PatternDoc, motifId: string, mappingId: string, fn: (m: Mapping) => Mapping): PatternDoc {
+  return updateMotif(doc, motifId, (m) => ({ ...m, mappings: m.mappings.map((p) => (p.id === mappingId ? fn(p) : p)) }));
+}
+
+/** Applies `fn` to the rows of every mapping of a motif, so the colours
+ * follow motif edits that move, add or remove rows. */
+export function withMappingRows(motif: Motif, fn: (rows: string[]) => string[]): Motif {
+  return { ...motif, mappings: motif.mappings.map((p) => ({ ...p, rows: fn(p.rows) })) };
 }
 
 export function updateColor(doc: PatternDoc, id: string, fn: (c: PaletteColor) => PaletteColor): PatternDoc {
@@ -180,14 +201,17 @@ export function renameMotif(doc: PatternDoc, oldId: string, newId: string): Rena
   };
 }
 
-export function renameMapping(doc: PatternDoc, oldId: string, newId: string): RenameResult {
+/** Renames a mapping within its motif; bands using it follow. */
+export function renameMapping(doc: PatternDoc, motifId: string, oldId: string, newId: string): RenameResult {
   if (oldId === newId) return { doc };
-  const error = checkNewId(newId, doc.mappings.map((m) => m.id));
-  if (error) return { error };
+  const motif = findMotif(doc, motifId);
+  if (!motif) return { error: `There is no motif “${motifId}”.` };
+  const error = checkNewId(newId, motif.mappings.map((m) => m.id));
+  if (error) return { error: error.replace('is already used.', `is already used by another mapping of “${motifId}”.`) };
   return {
     doc: {
-      ...updateMapping(doc, oldId, (m) => ({ ...m, id: newId })),
-      bands: doc.bands.map((b) => (b.mapping === oldId ? { ...b, mapping: newId } : b)),
+      ...updateMapping(doc, motifId, oldId, (m) => ({ ...m, id: newId })),
+      bands: doc.bands.map((b) => (b.motif === motifId && b.mapping === oldId ? { ...b, mapping: newId } : b)),
     },
   };
 }
@@ -199,9 +223,9 @@ export function renameColor(doc: PatternDoc, oldId: string, newId: string): Rena
   return {
     doc: {
       ...updateColor(doc, oldId, (c) => ({ ...c, id: newId })),
-      mappings: doc.mappings.map((m) =>
-        m.rows.some((r) => r.includes(oldId))
-          ? { ...m, rows: m.rows.map((r) => r.map((id) => (id === oldId ? newId : id))) }
+      motifs: doc.motifs.map((m) =>
+        m.mappings.some((p) => p.colors.includes(oldId))
+          ? { ...m, mappings: m.mappings.map((p) => ({ ...p, colors: p.colors.map((id) => (id === oldId ? newId : id)) })) }
           : m,
       ),
     },
@@ -220,18 +244,21 @@ export function deleteMotif(doc: PatternDoc, id: string): DeleteResult {
   return { doc: { ...doc, motifs: doc.motifs.filter((m) => m.id !== id) } };
 }
 
-export function deleteMapping(doc: PatternDoc, id: string): DeleteResult {
-  const users = bandsUsingMapping(doc, id);
+export function deleteMapping(doc: PatternDoc, motifId: string, id: string): DeleteResult {
+  const users = bandsUsingMapping(doc, motifId, id);
   if (users.length) {
     return { blocked: `Mapping “${id}” is used by ${describeBands(doc, users)}. Change or delete those bands first.` };
   }
-  return { doc: { ...doc, mappings: doc.mappings.filter((m) => m.id !== id) } };
+  if ((findMotif(doc, motifId)?.mappings.length ?? 0) <= 1) {
+    return { blocked: `“${id}” is the only mapping of motif “${motifId}”, and every motif needs one. Add another mapping before deleting this one.` };
+  }
+  return { doc: updateMotif(doc, motifId, (m) => ({ ...m, mappings: m.mappings.filter((p) => p.id !== id) })) };
 }
 
 export function deleteColor(doc: PatternDoc, id: string): DeleteResult {
   const users = mappingsUsingColor(doc, id);
   if (users.length) {
-    const list = users.map((m) => `“${m}”`).join(', ');
+    const list = users.map((m) => `“${describeMapping(m)}”`).join(', ');
     return {
       blocked: `Colour “${id}” is used by mapping${users.length > 1 ? 's' : ''} ${list}. Remove it from ${users.length > 1 ? 'them' : 'it'} first.`,
     };
@@ -244,7 +271,12 @@ export function deleteColor(doc: PatternDoc, id: string): DeleteResult {
 export function duplicateMotif(doc: PatternDoc, id: string): { doc: PatternDoc; id: string } {
   const source = findMotif(doc, id)!;
   const newId = uniqueId(`${id}-copy`, doc.motifs.map((m) => m.id));
-  const copy: Motif = { ...source, id: newId, rows: [...source.rows] };
+  const copy: Motif = {
+    ...source,
+    id: newId,
+    rows: [...source.rows],
+    mappings: source.mappings.map((p) => ({ ...p, colors: [...p.colors], rows: [...p.rows] })),
+  };
   if (source.name) copy.name = `${source.name} (copy)`;
   const index = doc.motifs.indexOf(source);
   const motifs = [...doc.motifs];
@@ -252,23 +284,36 @@ export function duplicateMotif(doc: PatternDoc, id: string): { doc: PatternDoc; 
   return { doc: { ...doc, motifs }, id: newId };
 }
 
-export function duplicateMapping(doc: PatternDoc, id: string): { doc: PatternDoc; id: string } {
-  const source = findMapping(doc, id)!;
-  const newId = uniqueId(`${id}-copy`, doc.mappings.map((m) => m.id));
-  const copy: Mapping = { ...source, id: newId, rows: source.rows.map((r) => [...r]) };
+export function duplicateMapping(doc: PatternDoc, motifId: string, id: string): { doc: PatternDoc; id: string } {
+  const motif = findMotif(doc, motifId)!;
+  const source = findMapping(motif, id)!;
+  const newId = uniqueId(`${id}-copy`, motif.mappings.map((m) => m.id));
+  const copy: Mapping = { ...source, id: newId, colors: [...source.colors], rows: [...source.rows] };
   if (source.name) copy.name = `${source.name} (copy)`;
-  const index = doc.mappings.indexOf(source);
-  const mappings = [...doc.mappings];
-  mappings.splice(index + 1, 0, copy);
-  return { doc: { ...doc, mappings }, id: newId };
+  const mappings = [...motif.mappings];
+  mappings.splice(mappings.indexOf(source) + 1, 0, copy);
+  return { doc: updateMotif(doc, motifId, (m) => ({ ...m, mappings })), id: newId };
+}
+
+/** Adds a mapping to a motif: the first three palette colours on every row. */
+export function addMapping(doc: PatternDoc, motifId: string, name = ''): { doc: PatternDoc; id: string } {
+  const motif = findMotif(doc, motifId)!;
+  const id = uniqueId(slugify(name || 'mapping', 'mapping'), motif.mappings.map((m) => m.id));
+  const mapping = withOptional({ ...defaultMapping(id, doc.palette, motif.rows.length), name: undefined }, 'name', name);
+  return { doc: updateMotif(doc, motifId, (m) => ({ ...m, mappings: [...m.mappings, mapping] })), id };
+}
+
+/** A new motif of the given size, with the default mapping. */
+export function blankMotif(doc: PatternDoc, id: string, rows: string[]): Motif {
+  return { id, rows, mappings: [defaultMapping(DEFAULT_MAPPING_ID, doc.palette, rows.length)] };
 }
 
 /** Makes sure a 1×1 all-background motif exists and returns its id. */
 export function ensureSpacer(doc: PatternDoc): { doc: PatternDoc; id: string } {
-  const existing = doc.motifs.find((m) => m.rows.length === 1 && m.rows[0] === '0');
+  const existing = doc.motifs.find((m) => m.rows.length === 1 && m.rows[0] === '0' && m.mappings.length > 0);
   if (existing) return { doc, id: existing.id };
   const id = uniqueId(SPACER_ID, doc.motifs.map((m) => m.id));
-  return { doc: { ...doc, motifs: [...doc.motifs, { id, name: 'Spacer', rows: ['0'] }] }, id };
+  return { doc: { ...doc, motifs: [...doc.motifs, { ...blankMotif(doc, id, ['0']), name: 'Spacer' }] }, id };
 }
 
 /** Today's timestamp in meta.modified. */

@@ -4,7 +4,8 @@
 
 import type { CompiledChart, PatternDoc } from '../core/types';
 import { displayRgb, lightness } from '../model/color';
-import { bandHeight, findMotif } from '../model/doc';
+import { bandHeight, findMapping, findMotif } from '../model/doc';
+import { slotColor } from '../model/mapping';
 import { bandRanges, repeatColumns } from './chart';
 import { PdfDocument, type PdfPage, type Rgb, textWidth } from './pdf';
 
@@ -237,8 +238,8 @@ export function patternPdf(doc: PatternDoc, chart: CompiledChart, options: PdfOp
   let row = 1;
   doc.bands.forEach((band, b) => {
     const h = bandHeight(doc, band);
-    const mapping = doc.mappings.find((m) => m.id === band.mapping);
     const motif = findMotif(doc, band.motif);
+    const mapping = findMapping(motif, band.mapping);
     for (let j = 0; j < h; j++, row++) {
       if (!page || y > paper.height - MARGIN - 20) {
         page = pdf.addPage(paper.width, paper.height);
@@ -249,14 +250,15 @@ export function patternPdf(doc: PatternDoc, chart: CompiledChart, options: PdfOp
         y += lineH + 2;
         footer(page, 'colours per row');
       }
-      const mrow = mapping?.rows[j % (mapping.rows.length || 1)] ?? [];
-      const usesAccent = motif?.rows[j % (motif.rows.length || 1)]?.includes('2');
+      // The mapping has one row per motif row, so both repeat together.
+      const r = j % (motif?.rows.length || 1);
+      const slot = (k: 0 | 1 | 2) => (mapping ? (slotColor(mapping, r, k) ?? undefined) : undefined);
       page.text(colX[0], y, String(row), 8.5, { bold: true });
       page.text(colX[1], y, String(b + 1), 8.5);
       page.text(colX[2], y, (band.name ?? motif?.name ?? band.motif).slice(0, 22), 8.5);
-      swatchText(page, colX[3], y, mrow[0]);
-      swatchText(page, colX[4], y, mrow[1]);
-      swatchText(page, colX[5], y, usesAccent || mrow[2] ? mrow[2] : undefined);
+      swatchText(page, colX[3], y, slot(0));
+      swatchText(page, colX[4], y, slot(1));
+      swatchText(page, colX[5], y, slot(2));
       if (j === h - 1) page.line(MARGIN, y + 4, paper.width - MARGIN, y + 4, GRID, 0.3);
       y += lineH;
     }

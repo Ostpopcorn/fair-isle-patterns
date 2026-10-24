@@ -45,14 +45,22 @@ export interface Motif {
   id: string;
   name?: string;
   rows: string[];
+  /** The motif's colourways, at least one. Ids are unique within the motif. */
+  mappings: Mapping[];
   [unknown: string]: unknown;
 }
 
-/** Each row is [bg, fg] or [bg, fg, accent], using palette ids. */
+/** The most colours one mapping may list. */
+export const MAX_MAPPING_COLORS = 10;
+
+/** A colourway of one motif. `colors` holds 1–10 palette ids; `rows` has one
+ * entry per motif row, in the same order, each 2 or 3 digits: the positions
+ * in `colors` of background, foreground and optionally accent. */
 export interface Mapping {
   id: string;
   name?: string;
-  rows: string[][];
+  colors: string[];
+  rows: string[];
   [unknown: string]: unknown;
 }
 
@@ -75,7 +83,6 @@ export interface PatternDoc {
   settings: Settings;
   palette: PaletteColor[];
   motifs: Motif[];
-  mappings: Mapping[];
   /** First element = bottom band. */
   bands: Band[];
   [unknown: string]: unknown;
@@ -87,7 +94,6 @@ export interface LibraryDoc {
   meta: Meta;
   palette: PaletteColor[];
   motifs: Motif[];
-  mappings: Mapping[];
   [unknown: string]: unknown;
 }
 
@@ -178,6 +184,8 @@ export const CHART_KEYS = ['width', 'height', 'palette', 'cells', 'symbols', 'ro
 export const LAYOUT_KEYS = ['stitchWidth', 'rowHeight', 'rowY', 'rowStart', 'x'] as const;
 export const PARSE_KEYS = ['doc', 'issues', 'readOnly'] as const;
 export const PATTERN_KEYS = [
-  'format', 'version', 'meta', 'gauge', 'cast_on', 'settings', 'palette', 'motifs', 'mappings', 'bands',
+  'format', 'version', 'meta', 'gauge', 'cast_on', 'settings', 'palette', 'motifs', 'bands',
 ] as const;
+export const MOTIF_KEYS = ['id', 'name', 'rows', 'mappings'] as const;
+export const MAPPING_KEYS = ['id', 'name', 'colors', 'rows'] as const;
 export const BAND_KEYS = ['motif', 'mapping', 'offset', 'times', 'name'] as const;

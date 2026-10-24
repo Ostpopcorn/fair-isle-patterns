@@ -1,6 +1,7 @@
 // Commands on the motif being edited, shared by the toolbar and shortcuts.
 
-import { findMotif, updateMotif } from '../../model/doc';
+import { findMotif, updateMotif, withMappingRows } from '../../model/doc';
+import * as MapOps from '../../model/mapping';
 import * as M from '../../model/motif';
 import { store } from '../../state/store';
 import { toast } from '../../state/actions';
@@ -13,17 +14,39 @@ function current() {
   return motif ? { s, motif } : null;
 }
 
-function setRows(rows: string[], coalesce?: string): void {
+/** Replaces the motif's rows. `follow` moves the rows of its mappings the
+ * same way, for edits that move rows (a vertical flip or roll), so each row
+ * keeps its colours. */
+function setRows(rows: string[], coalesce?: string, follow?: (rows: string[]) => string[]): void {
   const s = store.get();
   const id = s.ui.motifId;
   if (!id) return;
-  store.edit((doc) => updateMotif(doc, id, (m) => (M.width(m.rows) === M.width(rows) && m.rows.join() === rows.join() ? m : { ...m, rows })), {
+  store.edit(
+    (doc) =>
+      updateMotif(doc, id, (m) => {
+        // A symmetric motif can look the same after a flip while its
+        // colours still turn over, so compare the mappings too.
+        const next = follow ? withMappingRows({ ...m, rows }, follow) : { ...m, rows };
+        const same = M.width(m.rows) === M.width(rows) && m.rows.join() === rows.join() && m.mappings.every((p, i) => p.rows.join() === next.mappings[i].rows.join());
+        return same ? m : next;
+      }),
+    { coalesce },
+  );
+}
+
+/** Resizes the motif. Rows are added or removed at the top, and every
+ * mapping gains or loses the same rows (new rows copy its top row). */
+function resize(w: number, h: number, coalesce?: string): void {
+  const id = store.get().ui.motifId;
+  if (!id) return;
+  store.edit((doc) => updateMotif(doc, id, (m) => withMappingRows({ ...m, rows: M.resize(m.rows, w, h) }, (rows) => MapOps.fitRows(rows, h))), {
     coalesce,
   });
 }
 
 export const motifCommands = {
   setRows,
+  resize,
 
   transform(kind: Transform): void {
     const c = current();
@@ -40,12 +63,13 @@ export const motifCommands = {
       rot90cw: (r: M.Rows) => M.rotate90(r, true),
       rot90ccw: (r: M.Rows) => M.rotate90(r, false),
     }[kind](rows);
-    setRows(next);
+    // Turning the motif upside down turns its colours with it.
+    setRows(next, undefined, kind === 'flipV' || kind === 'rot180' ? MapOps.reverse : undefined);
   },
 
   roll(dx: number, dy: number): void {
     const c = current();
-    if (c) setRows(M.roll(c.motif.rows, dx, dy));
+    if (c) setRows(M.roll(c.motif.rows, dx, dy), undefined, dy ? (rows) => MapOps.rollRows(rows, dy) : undefined);
   },
 
   selectAll(): void {

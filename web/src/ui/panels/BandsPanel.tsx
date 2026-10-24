@@ -1,7 +1,7 @@
 import type { Band, Issue } from '../../core/types';
 import { bandHeight, bandStartRows, ensureSpacer, findMapping, findMotif, moveItem, updateBand, withOptional } from '../../model/doc';
 import { store, type AppState } from '../../state/store';
-import { Badge, MotifThumb, NumberField } from '../components/common';
+import { Badge, MotifThumb, NumberField, mappingColors } from '../components/common';
 
 function issuesByBand(issues: Issue[], starts: number[], heights: number[]): Map<number, Issue[]> {
   const out = new Map<number, Issue[]>();
@@ -33,24 +33,24 @@ export function BandsPanel({ s }: { s: AppState }) {
   const total = heights.reduce((a, b) => a + b, 0);
 
   const addBand = () => {
-    const motif = findMotif(doc, s.ui.motifId)?.id ?? doc.motifs.find((m) => !(m.rows.length === 1 && m.rows[0] === '0'))?.id ?? doc.motifs[0]?.id;
-    const mapping = findMapping(doc, s.ui.mappingId)?.id ?? doc.mappings[0]?.id;
+    const motif = findMotif(doc, s.ui.motifId) ?? doc.motifs.find((m) => !(m.rows.length === 1 && m.rows[0] === '0')) ?? doc.motifs[0];
+    const mapping = (findMapping(motif, s.ui.mappingId) ?? motif?.mappings[0])?.id;
     if (!motif || !mapping) {
-      store.ui({ dialog: { kind: 'message', title: 'Nothing to add yet', body: 'A band needs a motif and a mapping. Create them in the Motifs and Mappings tabs first.' } });
+      store.ui({ dialog: { kind: 'message', title: 'Nothing to add yet', body: 'A band needs a motif with a colour mapping. Create one in the Motifs tab first.' } });
       return;
     }
-    store.edit((d) => ({ ...d, bands: [...d.bands, { motif, mapping, offset: 0, times: 1 }] }));
+    store.edit((d) => ({ ...d, bands: [...d.bands, { motif: motif.id, mapping, offset: 0, times: 1 }] }));
     store.ui({ bandIndex: doc.bands.length });
   };
 
   const addSpacer = () => {
-    const mapping = doc.bands[doc.bands.length - 1]?.mapping ?? doc.mappings[0]?.id;
-    if (!mapping) {
-      store.ui({ dialog: { kind: 'message', title: 'No mapping yet', body: 'A spacer takes its colour from a mapping’s background. Create a mapping first.' } });
+    if (!doc.palette.length) {
+      store.ui({ dialog: { kind: 'message', title: 'No colours yet', body: 'A spacer is knitted in its mapping’s background colour. Add a colour to the palette first.' } });
       return;
     }
     store.edit((d) => {
       const { doc: withSpacer, id } = ensureSpacer(d);
+      const mapping = findMotif(withSpacer, id)!.mappings[0].id;
       return { ...withSpacer, bands: [...withSpacer.bands, { motif: id, mapping, offset: 0, times: 1, name: 'Spacer' }] };
     });
     store.ui({ bandIndex: doc.bands.length });
@@ -88,7 +88,7 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
   const doc = s.doc;
   const n = doc.bands.length;
   const motif = findMotif(doc, band.motif);
-  const mapping = findMapping(doc, band.mapping);
+  const mapping = findMapping(motif, band.mapping);
   const w = motif?.rows[0]?.length ?? 0;
   const effective = w && Number.isInteger(band.offset) ? ((band.offset % w) + w) % w : null;
   const set = (patch: Partial<Band>, key?: string) => store.edit((d) => updateBand(d, i, patch), key ? { coalesce: `band-${i}-${key}` } : {});
@@ -114,7 +114,7 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
       }}
     >
       <div class="card-head">
-        {motif && <MotifThumb rows={motif.rows} mapping={mapping} doc={doc} grayscale={s.ui.grayscale} maxSize={48} across={w < 12 ? 2 : 1} label={`${band.motif} with ${band.mapping}`} />}
+        {motif && <MotifThumb rows={motif.rows} colors={mapping && mappingColors(mapping, doc.palette)} grayscale={s.ui.grayscale} maxSize={48} across={w < 12 ? 2 : 1} label={`${band.motif} with ${band.mapping}`} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <strong>
             {i + 1}. {title}
@@ -131,7 +131,14 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
       <div class="grid2">
         <label class="field">
           <span>Motif</span>
-          <select value={band.motif} onChange={(e) => set({ motif: (e.currentTarget as HTMLSelectElement).value })}>
+          <select
+            value={band.motif}
+            onChange={(e) => {
+              // Keep the mapping id when the new motif has one by that name.
+              const next = findMotif(doc, (e.currentTarget as HTMLSelectElement).value);
+              if (next) set({ motif: next.id, mapping: findMapping(next, band.mapping)?.id ?? next.mappings[0]?.id ?? band.mapping });
+            }}
+          >
             {!motif && <option value={band.motif}>{band.motif} (missing)</option>}
             {doc.motifs.map((m) => (
               <option key={m.id} value={m.id}>
@@ -144,7 +151,7 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
           <span>Mapping</span>
           <select value={band.mapping} onChange={(e) => set({ mapping: (e.currentTarget as HTMLSelectElement).value })}>
             {!mapping && <option value={band.mapping}>{band.mapping} (missing)</option>}
-            {doc.mappings.map((m) => (
+            {motif?.mappings.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name ? `${m.name} (${m.id})` : m.id}
               </option>
@@ -199,7 +206,7 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
         </button>
       ))}
 
-      <div class="row">
+      <div class="row wrap">
         <button class="btn small icon" aria-label={`Move band ${i + 1} up`} title="Move up (Alt+↑)" disabled={i >= n - 1} onClick={() => moveBand(i, i + 1)}>
           ↑
         </button>
@@ -208,9 +215,16 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
         </button>
         <span class="spacer" />
         {motif && (
-          <button class="btn small ghost" onClick={() => store.ui({ motifId: motif.id, view: 'motif', panel: 'motifs', screen: 'view' })}>
-            Edit motif
-          </button>
+          <>
+            <button class="btn small ghost" title="Edit this band's mapping" onClick={() => store.ui({ motifId: motif.id, mappingId: band.mapping, panel: 'motifs', screen: 'edit' })}>
+              <span class="long">Edit colours</span>
+              <span class="short">Colours</span>
+            </button>
+            <button class="btn small ghost" title="Edit the motif" onClick={() => store.ui({ motifId: motif.id, mappingId: band.mapping, view: 'motif', panel: 'motifs', screen: 'view' })}>
+              <span class="long">Edit motif</span>
+              <span class="short">Motif</span>
+            </button>
+          </>
         )}
         <button
           class="btn small"

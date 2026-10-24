@@ -6,7 +6,7 @@ import { compile, layout, serialize, validate } from '../core';
 import type { Rect, Symbol } from '../model/motif';
 import { newPattern } from '../model/doc';
 
-export type Panel = 'bands' | 'motifs' | 'mappings' | 'palette' | 'project';
+export type Panel = 'bands' | 'motifs' | 'palette' | 'project';
 export type View = 'motif' | 'chart' | 'gauge' | 'round';
 export type Tool = 'pencil' | 'fill' | 'line' | 'rect' | 'select';
 /** On phones one screen is shown at a time; wider layouts show all three. */
@@ -24,6 +24,7 @@ export interface UiState {
   panel: Panel;
   view: View;
   motifId: string | null;
+  /** The mapping being edited, one of the selected motif's. */
   mappingId: string | null;
   bandIndex: number | null;
   tool: Tool;
@@ -31,8 +32,9 @@ export interface UiState {
   mirrorV: boolean;
   mirrorH: boolean;
   filledRect: boolean;
-  /** Mapping used to colour the motif editor's tiled preview. */
-  previewMapping: string | null;
+  /** How the motif editor colours the motif: one of its mappings, or null
+   * for black and white (which is not stored in the file). */
+  motifColors: string | null;
   /** Motif editor selection, in motif cells. */
   selection: Rect | null;
   /** Issue selected in the warnings panel; highlighted in the chart. */
@@ -86,7 +88,7 @@ export const initialUi: UiState = {
   mirrorV: false,
   mirrorH: false,
   filledRect: false,
-  previewMapping: null,
+  motifColors: null,
   selection: null,
   issue: null,
   grayscale: false,
@@ -118,7 +120,7 @@ export class Store {
       file: null,
       savedText: null,
       sessionId: newSessionId(),
-      ui: { ...initialUi, motifId: doc.motifs[0]?.id ?? null, mappingId: doc.mappings[0]?.id ?? null },
+      ui: { ...initialUi, motifId: doc.motifs[0]?.id ?? null, mappingId: doc.motifs[0]?.mappings[0]?.id ?? null },
       clipboard: null,
     };
   }
@@ -219,8 +221,8 @@ export class Store {
       ui: {
         ...this.state.ui,
         motifId: doc.motifs[0]?.id ?? null,
-        mappingId: doc.mappings[0]?.id ?? null,
-        previewMapping: null,
+        mappingId: doc.motifs[0]?.mappings[0]?.id ?? null,
+        motifColors: null,
         bandIndex: null,
         selection: null,
         issue: null,

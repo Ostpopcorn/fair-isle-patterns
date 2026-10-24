@@ -1,7 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import type { Mapping, PaletteColor, PatternDoc } from '../../core/types';
-import { displayHex, displayRgb } from '../../model/color';
+import type { Mapping, PaletteColor } from '../../core/types';
+import { displayHex } from '../../model/color';
+import { slotColor, type Slot } from '../../model/mapping';
 
 /** A text input bound to the document. Typing in one field is one undo step. */
 export function TextField(props: {
@@ -133,6 +134,55 @@ export function ColorSelect(props: {
   );
 }
 
+/** Picks one of a mapping's colours, by its position in the mapping's list. */
+export function PositionSelect(props: {
+  mapping: Mapping;
+  palette: PaletteColor[];
+  value: number | null;
+  onChange: (position: number | null) => void;
+  label: string;
+  allowNone?: boolean;
+  grayscale?: boolean;
+  /** A visible role label, shown where the column headers are hidden. */
+  tag?: string;
+  invalid?: boolean;
+}) {
+  const id = props.value === null ? null : (props.mapping.colors[props.value] ?? null);
+  const current = props.palette.find((c) => c.id === id);
+  const name = (cid: string) => {
+    const c = props.palette.find((x) => x.id === cid);
+    return c?.name ? `${c.name} (${cid})` : cid;
+  };
+  return (
+    <span class="color-select">
+      {props.tag && (
+        <span class="tag only-mobile" aria-hidden="true">
+          {props.tag}
+        </span>
+      )}
+      {current ? <Swatch hex={current.hex} grayscale={props.grayscale} /> : <span class="swatch" style={{ background: 'transparent', borderStyle: 'dashed' }} />}
+      <select
+        aria-label={props.label}
+        title={props.label}
+        aria-invalid={props.invalid ? 'true' : undefined}
+        value={props.value ?? ''}
+        onChange={(e) => {
+          const v = (e.currentTarget as HTMLSelectElement).value;
+          props.onChange(v === '' ? null : Number(v));
+        }}
+      >
+        {props.allowNone && <option value="">— none</option>}
+        {props.value !== null && !id && <option value={props.value}>colour {props.value} (missing)</option>}
+        {props.mapping.colors.map((cid, p) => (
+          <option key={p} value={p}>
+            {name(cid)}
+          </option>
+        ))}
+      </select>
+    </span>
+  );
+}
+
 export function Modal(props: {
   title: string;
   onClose: () => void;
@@ -193,12 +243,28 @@ export function symbolColors(): string[] {
   return SYMBOL_VARS.map((v) => style.getPropertyValue(v).trim() || '#888');
 }
 
-/** Paints motif rows on a canvas: with a mapping's colours (cycling its rows)
- * or with neutral symbol colours. Tiles `across` × `up` repeats. */
+/** Colours for a motif preview: a hex colour per motif row and symbol. */
+export type MotifColors = (row: number, symbol: number) => string;
+
+const MISSING = '#ff00ff';
+
+/** The motif editor's built-in colouring. It is not stored in the file. */
+export const BLACK_AND_WHITE = ['#ffffff', '#000000', '#8b1a1a'];
+export const blackAndWhite: MotifColors = (_row, symbol) => BLACK_AND_WHITE[symbol] ?? MISSING;
+
+/** A mapping's colours, looked up in a palette. Anything missing (such as an
+ * accent the mapping row lacks) shows as magenta. */
+export function mappingColors(mapping: Mapping, palette: readonly PaletteColor[]): MotifColors {
+  const hex = new Map(palette.map((c) => [c.id, c.hex]));
+  return (row, symbol) => hex.get(slotColor(mapping, row, symbol as Slot) ?? '') ?? MISSING;
+}
+
+/** Paints motif rows on a canvas, with the given colours or the neutral
+ * symbol colours. Tiles `across` × `up` repeats. */
 export function paintMotif(
   canvas: HTMLCanvasElement,
   rows: string[],
-  options: { cell: number; mapping?: Mapping; doc?: PatternDoc; grayscale?: boolean; across?: number; up?: number },
+  options: { cell: number; colors?: MotifColors; grayscale?: boolean; across?: number; up?: number },
 ): void {
   const w = rows[0]?.length ?? 0;
   const h = rows.length;
@@ -210,22 +276,14 @@ export function paintMotif(
   const ctx = canvas.getContext('2d');
   if (!ctx || !w || !h) return;
   const neutral = symbolColors();
-  const hexOf = (id: string | undefined) => options.doc?.palette.find((c) => c.id === id)?.hex;
+  const rowColors = rows.map((_, r) =>
+    [0, 1, 2].map((s) => (options.colors ? displayHex(options.colors(r, s), options.grayscale ?? false) : (neutral[s] ?? MISSING))),
+  );
   for (let j = 0; j < h * up; j++) {
     const r = j % h;
-    const mrow = options.mapping?.rows.length ? options.mapping.rows[j % options.mapping.rows.length] : null;
     const screenY = (h * up - 1 - j) * cell;
     for (let x = 0; x < w * across; x++) {
-      const s = Number(rows[r][x % w]);
-      let color: string;
-      if (mrow) {
-        const hex = hexOf(mrow[s] ?? mrow[1]);
-        const [cr, cg, cb] = displayRgb(hex ?? '#ff00ff', options.grayscale ?? false);
-        color = `rgb(${cr},${cg},${cb})`;
-      } else {
-        color = neutral[s] ?? '#f0f';
-      }
-      ctx.fillStyle = color;
+      ctx.fillStyle = rowColors[r][Number(rows[r][x % w])] ?? MISSING;
       ctx.fillRect(x * cell, screenY, cell, cell);
     }
   }
@@ -234,8 +292,7 @@ export function paintMotif(
 export function MotifThumb(props: {
   rows: string[];
   maxSize?: number;
-  mapping?: Mapping;
-  doc?: PatternDoc;
+  colors?: MotifColors;
   grayscale?: boolean;
   across?: number;
   label?: string;
@@ -246,7 +303,7 @@ export function MotifThumb(props: {
   const h = props.rows.length || 1;
   const cell = Math.max(1, Math.floor(max / Math.max(w, h)));
   useLayoutEffect(() => {
-    if (ref.current) paintMotif(ref.current, props.rows, { cell, mapping: props.mapping, doc: props.doc, grayscale: props.grayscale, across: props.across });
+    if (ref.current) paintMotif(ref.current, props.rows, { cell, colors: props.colors, grayscale: props.grayscale, across: props.across });
   });
   return <canvas ref={ref} class="thumb" role="img" aria-label={props.label ?? 'Motif preview'} style={{ width: `${w * cell}px`, maxWidth: '100%', height: 'auto', aspectRatio: `${w} / ${h}` }} />;
 }

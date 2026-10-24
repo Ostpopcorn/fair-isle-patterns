@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { PaletteColor } from '../../core/types';
 import { parseHex } from '../../model/color';
-import { deleteColor, mappingsUsingColor, renameColor, slugify, uniqueId, updateColor, withOptional } from '../../model/doc';
+import { deleteColor, describeMapping, mappingsUsingColor, renameColor, slugify, uniqueId, updateColor, withOptional } from '../../model/doc';
 import { importLibraryFile } from '../../state/actions';
 import { store, type AppState } from '../../state/store';
 import { Swatch } from '../components/common';
@@ -47,7 +47,7 @@ function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onTo
   const [hexText, setHexText] = useState(color.hex);
   useEffect(() => setHexText(color.hex), [color.hex]);
   const setHex = (hex: string) => store.edit((d) => updateColor(d, color.id, (c) => ({ ...c, hex })), { coalesce: `hex-${color.id}` });
-  const users = mappingsUsingColor(s.doc, color.id);
+  const users = mappingsUsingColor(s.doc, color.id).map(describeMapping);
 
   return (
     <div class="card" style={{ gap: '6px', padding: '8px' }}>
