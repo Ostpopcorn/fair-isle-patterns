@@ -12,14 +12,17 @@
   "motifs": [
     { "id": "six", "rows": [
       "010101"
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
     ] },
     { "id": "eight", "rows": [
       "01010101"
-    ] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
     ] }
   ],
   "bands": [

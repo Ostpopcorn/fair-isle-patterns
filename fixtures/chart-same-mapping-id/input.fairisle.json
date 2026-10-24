@@ -1,0 +1,33 @@
+{
+  "format": "fairisle-pattern",
+  "version": 1,
+  "meta": { "name": "Same mapping id" },
+  "gauge": { "stitches": 28, "rows": 32, "per_cm": 10 },
+  "cast_on": 2,
+  "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
+  "palette": [
+    { "id": "a", "hex": "#f2efe8" },
+    { "id": "b", "hex": "#24283b" },
+    { "id": "c", "hex": "#8a1c1c" }
+  ],
+  "motifs": [
+    { "id": "dots", "rows": [
+      "10"
+    ], "mappings": [
+      { "id": "default", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
+    ] },
+    { "id": "bars", "rows": [
+      "11"
+    ], "mappings": [
+      { "id": "default", "colors": ["a", "c"], "rows": [
+        "01"
+      ] }
+    ] }
+  ],
+  "bands": [
+    { "motif": "dots", "mapping": "default", "offset": 0 },
+    { "motif": "bars", "mapping": "default", "offset": 0 }
+  ]
+}

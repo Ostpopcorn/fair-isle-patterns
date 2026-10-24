@@ -145,6 +145,8 @@ fn performance_400_by_300() {
                 .collect()
         })
         .collect();
+    // Three colour schemes cycling over the 60 motif rows.
+    let mapping_rows: Vec<&str> = (0..60).map(|r| ["012", "032", "021"][r % 3]).collect();
     let doc = json!({
         "format": "fairisle-pattern", "version": 1, "meta": { "name": "Large" },
         "gauge": { "stitches": 28, "rows": 32 }, "cast_on": 400,
@@ -152,8 +154,9 @@ fn performance_400_by_300() {
             { "id": "a", "hex": "#efe6d2" }, { "id": "b", "hex": "#1f2a44" },
             { "id": "c", "hex": "#a4452c" }, { "id": "d", "hex": "#d9a441" }
         ],
-        "motifs": [ { "id": "big", "rows": rows } ],
-        "mappings": [ { "id": "m", "rows": [["a", "b", "c"], ["a", "d", "c"], ["a", "c", "b"]] } ],
+        "motifs": [ { "id": "big", "rows": rows, "mappings": [
+            { "id": "m", "colors": ["a", "b", "c", "d"], "rows": mapping_rows }
+        ] } ],
         "bands": [ { "motif": "big", "mapping": "m", "times": 5 } ]
     });
     let chart = compile(&doc).expect("compiles");

@@ -13,11 +13,11 @@
     { "id": "shaped", "rows": [
       "01.0",
       "0130"
-    ] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01",
+        "01"
+      ] }
     ] }
   ],
   "bands": [

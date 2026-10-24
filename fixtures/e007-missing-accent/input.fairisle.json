@@ -7,19 +7,25 @@
   "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
   "palette": [
     { "id": "cream", "hex": "#efe6d2", "name": "Natural" },
-    { "id": "navy", "hex": "#1f2a44" }
+    { "id": "navy", "hex": "#1f2a44" },
+    { "id": "rust", "hex": "#a4452c" }
   ],
   "motifs": [
     { "id": "accent", "rows": [
-      "0120"
-    ] }
-  ],
-  "mappings": [
-    { "id": "two", "rows": [
-      ["cream", "navy"]
+      "0120",
+      "0110"
+    ], "mappings": [
+      { "id": "two", "colors": ["cream", "navy"], "rows": [
+        "01",
+        "01"
+      ] },
+      { "id": "three", "colors": ["cream", "navy", "rust"], "rows": [
+        "012",
+        "01"
+      ] }
     ] }
   ],
   "bands": [
-    { "motif": "accent", "mapping": "two", "offset": 0 }
+    { "motif": "accent", "mapping": "three", "offset": 0 }
   ]
 }

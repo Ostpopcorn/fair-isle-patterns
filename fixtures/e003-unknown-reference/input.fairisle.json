@@ -12,18 +12,28 @@
   "motifs": [
     { "id": "dot", "rows": [
       "01"
-    ] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] },
+      { "id": "ax", "colors": ["a", "x"], "rows": [
+        "01"
+      ] },
+      { "id": "far", "colors": ["a", "b"], "rows": [
+        "03"
+      ] }
     ] },
-    { "id": "ax", "rows": [
-      ["a", "x"]
+    { "id": "ring", "rows": [
+      "11"
+    ], "mappings": [
+      { "id": "ring-only", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
     ] }
   ],
   "bands": [
     { "motif": "star", "mapping": "ab", "offset": 0 },
-    { "motif": "dot", "mapping": "zz", "offset": 0 }
+    { "motif": "dot", "mapping": "zz", "offset": 0 },
+    { "motif": "dot", "mapping": "ring-only", "offset": 0 }
   ]
 }

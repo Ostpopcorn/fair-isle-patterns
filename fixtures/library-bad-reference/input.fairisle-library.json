@@ -10,11 +10,11 @@
     { "id": "dots", "name": "Dots", "rows": [
       "10",
       "00"
-    ] }
-  ],
-  "mappings": [
-    { "id": "two-colour", "name": "Two colour", "rows": [
-      ["white", "red"]
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["white", "red"], "rows": [
+        "01",
+        "01"
+      ] }
     ] }
   ],
   "bands": []

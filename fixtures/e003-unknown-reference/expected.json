@@ -1,16 +1,27 @@
 {
-  "description": "Unknown references: band to motif, band to mapping, mapping row to palette colour",
+  "description": "Unknown references: band to motif, band to a mapping its motif does not have (even when another motif has it), mapping colour to palette, row digit to colour position",
   "roundtrip": true,
   "issues": [
     {
       "code": "E003",
       "severity": "error",
       "location": {
+        "motif": "dot",
         "mapping": "ax",
-        "mappingRow": 1,
-        "color": "x"
+        "color": "x",
+        "path": "motifs[0].mappings[1].colors[1]"
       },
       "detail": "\"x\""
+    },
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "far",
+        "mappingRow": 1
+      },
+      "detail": "position 3"
     },
     {
       "code": "E003",
@@ -26,9 +37,20 @@
       "severity": "error",
       "location": {
         "band": 1,
+        "motif": "dot",
         "mapping": "zz"
       },
       "detail": "\"zz\""
+    },
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "band": 2,
+        "motif": "dot",
+        "mapping": "ring-only"
+      },
+      "detail": "\"ring-only\""
     }
   ]
 }

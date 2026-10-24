@@ -18,15 +18,14 @@
       "001100",
       "010010",
       "100001"
-    ] }
-  ],
-  "mappings": [
-    { "id": "sunset", "rows": [
-      ["cream", "navy"],
-      ["cream", "rust"],
-      ["cream", "gold"],
-      ["cream", "rust"],
-      ["cream", "navy"]
+    ], "mappings": [
+      { "id": "sunset", "colors": ["cream", "navy", "rust", "gold"], "rows": [
+        "01",
+        "02",
+        "03",
+        "02",
+        "01"
+      ] }
     ] }
   ],
   "bands": [

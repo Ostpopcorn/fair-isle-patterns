@@ -18,9 +18,21 @@
       "001100",
       "010010",
       "100001"
+    ], "mappings": [
+      { "id": "sunset", "colors": ["cream", "navy", "rust", "gold"], "rows": [
+        "01",
+        "02",
+        "03",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "solid", "rows": [
       "0"
+    ], "mappings": [
+      { "id": "plain", "colors": ["cream", "navy"], "rows": [
+        "01"
+      ] }
     ] },
     { "id": "flower", "rows": [
       "00010000",
@@ -28,21 +40,14 @@
       "01121100",
       "00111000",
       "00010000"
-    ] }
-  ],
-  "mappings": [
-    { "id": "sunset", "rows": [
-      ["cream", "navy"],
-      ["cream", "rust"],
-      ["cream", "gold"],
-      ["cream", "rust"],
-      ["cream", "navy"]
-    ] },
-    { "id": "flower-colors", "rows": [
-      ["cream", "rust", "gold"]
-    ] },
-    { "id": "plain", "rows": [
-      ["cream", "navy"]
+    ], "mappings": [
+      { "id": "flower-colors", "colors": ["cream", "rust", "gold"], "rows": [
+        "012",
+        "012",
+        "012",
+        "012",
+        "012"
+      ] }
     ] }
   ],
   "bands": [

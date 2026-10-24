@@ -13,11 +13,10 @@
   "motifs": [
     { "id": "abc", "rows": [
       "0120"
-    ] }
-  ],
-  "mappings": [
-    { "id": "aac", "rows": [
-      ["a", "a", "c"]
+    ], "mappings": [
+      { "id": "aac", "colors": ["a", "c"], "rows": [
+        "001"
+      ] }
     ] }
   ],
   "bands": [

@@ -1,8 +1,17 @@
 {
   "format": "fairisle-library",
   "version": 1,
-  "meta": { "name": "OXO bands and stars", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Larger fair isle bands: OXO bands of 7 to 15 rows and a few large stars. No float is longer than 7 stitches." },
-  "palette": [],
+  "meta": { "name": "OXO bands and stars", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Larger fair isle bands: OXO bands of 7 to 15 rows and a few large stars. No float is longer than 7 stitches. Each motif comes with two-colour, light-on-dark and shaded mappings in the neutral colours." },
+  "palette": [
+    { "id": "natural", "hex": "#efe6d2", "name": "Natural white" },
+    { "id": "oatmeal", "hex": "#d8c9a8", "name": "Oatmeal" },
+    { "id": "moorit", "hex": "#7a5838", "name": "Moorit" },
+    { "id": "black", "hex": "#1f1d1c", "name": "Black" },
+    { "id": "charcoal", "hex": "#3a3d42", "name": "Charcoal" },
+    { "id": "navy", "hex": "#1f2a44", "name": "Navy" },
+    { "id": "madder", "hex": "#a4452c", "name": "Madder red" },
+    { "id": "gold", "hex": "#d9a441", "name": "Gold" }
+  ],
   "motifs": [
     { "id": "oxo-classic", "name": "OXO classic", "rows": [
       "000001000000100001000010",
@@ -16,6 +25,46 @@
       "000110110000011001001100",
       "000011100000110011100110",
       "000001000000100001000010"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "oxo-small", "name": "OXO small", "rows": [
       "0001000010010010",
@@ -25,6 +74,34 @@
       "0100010000101000",
       "0010100001000100",
       "0001000010010010"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "oxo-lozenge", "name": "OXO lozenge", "rows": [
       "000001000000100001000010",
@@ -38,6 +115,46 @@
       "000111110000011001001100",
       "000011100000110011100110",
       "000001000000100001000010"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "oxo-diamond", "name": "OXO diamond", "rows": [
       "00001000001000100010",
@@ -49,6 +166,40 @@
       "00100010000010001000",
       "00010100000100100100",
       "00001000001000100010"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "oxo-framed", "name": "OXO framed", "rows": [
       "010101010101010101010101",
@@ -66,6 +217,58 @@
       "000001000000100001000010",
       "000000000000000000000000",
       "010101010101010101010101"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01",
+        "02",
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "selbu-star", "name": "Selbu star", "rows": [
       "000010000000100001",
@@ -85,6 +288,64 @@
       "000011100011100001",
       "000011000001100001",
       "000010000000100001"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01",
+        "02",
+        "34",
+        "02",
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "star-small", "name": "Small star", "rows": [
       "001000001001",
@@ -98,6 +359,46 @@
       "001110111001",
       "001100011001",
       "001000001001"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] },
     { "id": "diamond-rings", "name": "Diamond rings", "rows": [
       "0101010101010101",
@@ -115,7 +416,58 @@
       "0101010101010101",
       "1010101010101011",
       "0101010101010101"
+    ], "mappings": [
+      { "id": "two-colour", "name": "Two colour", "colors": ["natural", "black"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "light-on-dark", "name": "Light on dark", "colors": ["navy", "natural"], "rows": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ] },
+      { "id": "shaded", "name": "Shaded", "colors": ["natural", "charcoal", "moorit", "oatmeal", "madder", "gold", "navy"], "rows": [
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01",
+        "02",
+        "01",
+        "02",
+        "34",
+        "56",
+        "34",
+        "02",
+        "01"
+      ] }
     ] }
-  ],
-  "mappings": []
+  ]
 }

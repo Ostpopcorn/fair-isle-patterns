@@ -296,9 +296,9 @@ impl Reader {
 
         let known: &[&str] = match kind {
             Kind::Pattern => &[
-                "format", "version", "meta", "gauge", "cast_on", "settings", "palette", "motifs", "mappings", "bands",
+                "format", "version", "meta", "gauge", "cast_on", "settings", "palette", "motifs", "bands",
             ],
-            Kind::Library => &["format", "version", "meta", "palette", "motifs", "mappings"],
+            Kind::Library => &["format", "version", "meta", "palette", "motifs"],
         };
         let is_pattern = kind == Kind::Pattern;
 
@@ -333,16 +333,6 @@ impl Reader {
                     .collect()
             })
             .unwrap_or_default();
-        let mappings = self
-            .array(root, "mappings", is_pattern)
-            .map(|items| {
-                items
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, v)| self.mapping(v, format!("mappings[{i}]")))
-                    .collect()
-            })
-            .unwrap_or_default();
         let bands = if is_pattern {
             self.array(root, "bands", true)
                 .map(|items| items.iter().enumerate().map(|(i, v)| self.band(v, i)).collect())
@@ -362,7 +352,6 @@ impl Reader {
             settings,
             palette,
             motifs,
-            mappings,
             bands,
             extra,
         })
@@ -462,75 +451,69 @@ impl Reader {
             ..Location::default()
         };
         let name = self.opt_string(map, "name", &path, &loc);
-        let mut rows = Vec::new();
-        match map.get("rows") {
+        let rows = self.strings(map, "rows", &path, &loc);
+        let mut mappings = Vec::new();
+        match map.get("mappings") {
             None => {
-                self.missing(&path, "rows", &loc);
+                self.missing(&path, "mappings", &loc);
             }
             Some(Value::Array(items)) => {
                 for (i, item) in items.iter().enumerate() {
-                    match item {
-                        Value::String(s) => rows.push(s.clone()),
-                        other => {
-                            self.wrong_type(format!("{path}.rows[{i}]"), "a string", other, &loc);
-                        }
+                    if let Some(m) = self.mapping(item, format!("{path}.mappings[{i}]"), &id) {
+                        mappings.push(m);
                     }
                 }
             }
             Some(other) => {
-                self.wrong_type(join(&path, "rows"), "an array of strings", other, &loc);
+                self.wrong_type(join(&path, "mappings"), "an array", other, &loc);
             }
         }
         Some(Motif {
             name,
             rows,
-            extra: self.extras(map, &["id", "name", "rows"], &path, &loc),
+            mappings,
+            extra: self.extras(map, &["id", "name", "rows", "mappings"], &path, &loc),
             id,
         })
     }
 
-    fn mapping(&mut self, v: &Value, path: String) -> Option<Mapping> {
-        let (id, map) = self.entry_id(v, &path)?;
-        let loc = Location {
-            mapping: Some(id.clone()),
-            ..Location::default()
-        };
-        let name = self.opt_string(map, "name", &path, &loc);
-        let mut rows = Vec::new();
-        match map.get("rows") {
+    /// An array of strings at `map[key]`; wrong entries are reported and
+    /// skipped.
+    fn strings(&mut self, map: &Map<String, Value>, key: &str, path: &str, loc: &Location) -> Vec<String> {
+        let mut out = Vec::new();
+        match map.get(key) {
             None => {
-                self.missing(&path, "rows", &loc);
+                self.missing(path, key, loc);
             }
             Some(Value::Array(items)) => {
                 for (i, item) in items.iter().enumerate() {
-                    let row_path = format!("{path}.rows[{i}]");
                     match item {
-                        Value::Array(entries) => {
-                            let mut row = Vec::new();
-                            for (j, entry) in entries.iter().enumerate() {
-                                match entry {
-                                    Value::String(s) => row.push(s.clone()),
-                                    other => {
-                                        self.wrong_type(format!("{row_path}[{j}]"), "a string", other, &loc);
-                                    }
-                                }
-                            }
-                            rows.push(row);
-                        }
+                        Value::String(s) => out.push(s.clone()),
                         other => {
-                            self.wrong_type(row_path, "an array of palette ids", other, &loc);
+                            self.wrong_type(format!("{path}.{key}[{i}]"), "a string", other, loc);
                         }
                     }
                 }
             }
             Some(other) => {
-                self.wrong_type(join(&path, "rows"), "an array", other, &loc);
+                self.wrong_type(join(path, key), "an array of strings", other, loc);
             }
         }
+        out
+    }
+
+    fn mapping(&mut self, v: &Value, path: String, motif: &str) -> Option<Mapping> {
+        let (id, map) = self.entry_id(v, &path)?;
+        let loc = Location {
+            motif: Some(motif.to_string()),
+            mapping: Some(id.clone()),
+            ..Location::default()
+        };
         Some(Mapping {
-            name,
-            rows,
-            extra: self.extras(map, &["id", "name", "rows"], &path, &loc),
+            name: self.opt_string(map, "name", &path, &loc),
+            colors: self.strings(map, "colors", &path, &loc),
+            rows: self.strings(map, "rows", &path, &loc),
+            extra: self.extras(map, &["id", "name", "colors", "rows"], &path, &loc),
             id,
         })
     }

@@ -27,6 +27,25 @@
         "path": "motifs[0].rows"
       },
       "detail": "motifs[0].rows"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "ab",
+        "path": "motifs[0].mappings[0].rows[0]"
+      },
+      "detail": "motifs[0].mappings[0].rows[0]"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "motif": "bare",
+        "path": "motifs[1].mappings"
+      },
+      "detail": "motifs[1].mappings"
     }
   ]
 }

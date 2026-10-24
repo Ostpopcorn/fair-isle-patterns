@@ -15,6 +15,16 @@
       "code": "W106",
       "severity": "notice",
       "location": {
+        "motif": "dot",
+        "mapping": "ab",
+        "path": "motifs[0].mappings[0].x-tag"
+      },
+      "detail": "motifs[0].mappings[0].x-tag"
+    },
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
         "band": 0,
         "path": "bands[0].comment"
       },

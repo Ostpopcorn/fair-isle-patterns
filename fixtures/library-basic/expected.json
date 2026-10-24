@@ -1,5 +1,5 @@
 {
-  "description": "A library file: palette, motifs and mappings, no bands",
+  "description": "A library file: a palette and motifs with their mappings, no bands",
   "roundtrip": true,
   "issues": []
 }

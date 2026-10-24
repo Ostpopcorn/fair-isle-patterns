@@ -4,7 +4,7 @@
 use serde::Serialize;
 
 use crate::model::*;
-use crate::validate::{band_widths, motif_width, Resolved, MAX_CAST_ON};
+use crate::validate::{band_widths, motif_width, row_digits, Resolved, MAX_CAST_ON};
 
 /// The compiled chart. Cells are row-major, bottom row first, columns from
 /// the left; each cell is an index into `palette`.
@@ -42,39 +42,43 @@ pub fn build(doc: &Document) -> CompiledChart {
     };
 
     for (b, band) in doc.bands.iter().enumerate() {
-        let (Some(m), Some(p), Some(height)) =
-            (r.motif(&band.motif), r.mapping(&band.mapping), r.band_height(doc, band))
-        else {
+        let Some(m) = r.motif(&band.motif) else { continue };
+        let (Some(p), Some(height)) = (r.mapping(m, &band.mapping), r.band_height(doc, band)) else {
             continue;
         };
-        if !r.mapping_ok[p] {
+        if !r.mapping_ok[m][p] {
             continue;
         }
         let motif = &doc.motifs[m];
         let w = motif_width(motif);
-        let h = motif.rows.len();
         let rows: Vec<&[u8]> = motif.rows.iter().map(|s| s.as_bytes()).collect();
-        let mapping: Vec<[u16; 3]> = doc.mappings[p]
+        let source = &motif.mappings[p];
+        // Palette index of background, foreground and accent, per motif row.
+        let mapping: Vec<[u16; 3]> = source
             .rows
             .iter()
             .map(|row| {
-                let idx = |i: usize| {
-                    row.get(i)
+                let digits = row_digits(row).unwrap_or_default();
+                let idx = |slot: usize| {
+                    digits
+                        .get(slot)
+                        .and_then(|d| source.colors.get(*d))
                         .and_then(|id| r.palette.get(id.as_str()))
                         .map_or(0, |v| *v as u16)
                 };
                 // Without an accent, E007 guarantees symbol 2 never appears.
-                [idx(0), idx(1), if row.len() > 2 { idx(2) } else { idx(1) }]
+                [idx(0), idx(1), if digits.len() > 2 { idx(2) } else { idx(1) }]
             })
             .collect();
-        let k = mapping.len();
+        let h = rows.len();
         let shift = as_int(band.offset).unwrap_or(0).rem_euclid(w as i64) as usize;
 
         chart.cells.reserve(height * width);
         chart.symbols.reserve(height * width);
         for j in 0..height {
+            // The mapping has one row per motif row, so both repeat together.
             let motif_row = rows[j % h];
-            let colors = mapping[j % k];
+            let colors = mapping[j % h];
             for c in 0..width {
                 let symbol = motif_row.get((c + shift) % w).map_or(0, |ch| ch.wrapping_sub(b'0'));
                 let symbol = if symbol > 2 { 0 } else { symbol };

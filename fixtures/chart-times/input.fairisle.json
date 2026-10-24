@@ -8,23 +8,20 @@
   "palette": [
     { "id": "a", "hex": "#f5f5f5" },
     { "id": "b", "hex": "#222222" },
-    { "id": "c", "hex": "#8b0000" },
-    { "id": "d", "hex": "#00008b" }
+    { "id": "c", "hex": "#8b0000" }
   ],
   "motifs": [
     { "id": "check", "rows": [
       "10",
       "01"
-    ] }
-  ],
-  "mappings": [
-    { "id": "three", "rows": [
-      ["a", "b"],
-      ["a", "c"],
-      ["a", "d"]
+    ], "mappings": [
+      { "id": "two", "colors": ["a", "b", "c"], "rows": [
+        "01",
+        "02"
+      ] }
     ] }
   ],
   "bands": [
-    { "motif": "check", "mapping": "three", "offset": 0, "times": 2 }
+    { "motif": "check", "mapping": "two", "offset": 0, "times": 2 }
   ]
 }

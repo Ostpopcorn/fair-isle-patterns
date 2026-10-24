@@ -1,0 +1,16 @@
+{
+  "description": "Two motifs each have a mapping called default; each band uses the one of its own motif",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "a": "a",
+      "b": "b",
+      "c": "c"
+    },
+    "rows": [
+      "cc",
+      "ba"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "description": "Duplicate ids within the palette and within the motifs",
+  "description": "Duplicate ids within the palette, within the motifs and within one motif's mappings; the same mapping id in different motifs is fine",
   "roundtrip": true,
   "issues": [
     {
@@ -19,6 +19,16 @@
         "path": "motifs[1].id"
       },
       "detail": "\"dot\""
+    },
+    {
+      "code": "E002",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "ab",
+        "path": "motifs[0].mappings[1].id"
+      },
+      "detail": "mappings of motif \"dot\""
     }
   ]
 }

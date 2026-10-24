@@ -1,7 +1,7 @@
 {
   "format": "fairisle-library",
   "version": 1,
-  "meta": { "name": "Neutral palette and basic mappings", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Twelve neutral colours (approximations, not tied to any yarn line) and basic colour mappings that use them." },
+  "meta": { "name": "Neutral palette", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Twelve neutral colours (approximations, not tied to any yarn line) to add to a project's palette." },
   "palette": [
     { "id": "natural", "hex": "#efe6d2", "name": "Natural white" },
     { "id": "oatmeal", "hex": "#d8c9a8", "name": "Oatmeal" },
@@ -16,37 +16,5 @@
     { "id": "gold", "hex": "#d9a441", "name": "Gold" },
     { "id": "moss", "hex": "#6b7a3a", "name": "Moss green" }
   ],
-  "motifs": [],
-  "mappings": [
-    { "id": "two-colour", "name": "Two colour", "rows": [
-      ["natural", "black"]
-    ] },
-    { "id": "two-colour-dark", "name": "Two colour, light on dark", "rows": [
-      ["navy", "natural"]
-    ] },
-    { "id": "with-accent", "name": "Two colour with accent", "rows": [
-      ["natural", "navy", "madder"]
-    ] },
-    { "id": "gradient-3", "name": "Three-step gradient", "rows": [
-      ["natural", "moorit"],
-      ["natural", "madder"],
-      ["natural", "gold"]
-    ] },
-    { "id": "gradient-5-symmetric", "name": "Symmetric five-row gradient", "rows": [
-      ["natural", "navy"],
-      ["oatmeal", "madder"],
-      ["gold", "black"],
-      ["oatmeal", "madder"],
-      ["natural", "navy"]
-    ] },
-    { "id": "gradient-7-symmetric", "name": "Symmetric seven-row gradient", "rows": [
-      ["natural", "charcoal"],
-      ["natural", "moorit"],
-      ["oatmeal", "madder"],
-      ["gold", "navy"],
-      ["oatmeal", "madder"],
-      ["natural", "moorit"],
-      ["natural", "charcoal"]
-    ] }
-  ]
+  "motifs": []
 }

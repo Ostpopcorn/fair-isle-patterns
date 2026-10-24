@@ -12,11 +12,10 @@
   "motifs": [
     { "id": "dot", "rows": [
       "01"
-    ] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
     ] }
   ],
   "bands": [

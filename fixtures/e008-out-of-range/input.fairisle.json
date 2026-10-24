@@ -12,15 +12,14 @@
   "motifs": [
     { "id": "dot", "rows": [
       "01"
-    ] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "B"]
+    ], "mappings": [
+      { "id": "AB", "colors": ["a", "B"], "rows": [
+        "01"
+      ] }
     ] }
   ],
   "bands": [
-    { "motif": "dot", "mapping": "ab", "offset": 1.5 },
-    { "motif": "dot", "mapping": "ab", "offset": 0, "times": 0 }
+    { "motif": "dot", "mapping": "AB", "offset": 1.5 },
+    { "motif": "dot", "mapping": "AB", "offset": 0, "times": 0 }
   ]
 }

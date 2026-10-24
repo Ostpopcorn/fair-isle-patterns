@@ -1,32 +1,84 @@
 {
-  "description": "A mapping with no rows, and rows with more than 3 or fewer than 2 entries",
+  "description": "A motif with no mappings; mappings with too few rows, rows that are not 2 or 3 digits, no colours, more than 10 colours and a colour listed twice",
   "roundtrip": true,
   "issues": [
     {
       "code": "E006",
       "severity": "error",
       "location": {
-        "mapping": "none"
+        "motif": "none",
+        "path": "motifs[0].mappings"
       },
-      "detail": "no rows"
+      "detail": "no mappings"
     },
     {
       "code": "E006",
       "severity": "error",
       "location": {
-        "mapping": "wide",
+        "motif": "dot",
+        "mapping": "short",
+        "path": "motifs[1].mappings[0].rows"
+      },
+      "detail": "1 row"
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "bad",
+        "mappingRow": 1
+      },
+      "detail": "\"0\""
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "bad",
         "mappingRow": 2
       },
-      "detail": "4 entries"
+      "detail": "\"0123\""
     },
     {
       "code": "E006",
       "severity": "error",
       "location": {
-        "mapping": "wide",
-        "mappingRow": 3
+        "motif": "dot",
+        "mapping": "letters",
+        "mappingRow": 2
       },
-      "detail": "1 entry"
+      "detail": "\"ab\""
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "empty"
+      },
+      "detail": "no colours"
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "eleven"
+      },
+      "detail": "11 colours"
+    },
+    {
+      "code": "E006",
+      "severity": "error",
+      "location": {
+        "motif": "dot",
+        "mapping": "twice",
+        "color": "a",
+        "path": "motifs[1].mappings[5].colors[2]"
+      },
+      "detail": "more than once"
     }
   ]
 }

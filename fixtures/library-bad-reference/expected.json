@@ -1,5 +1,5 @@
 {
-  "description": "A library mapping may only reference palette colours in the same file; bands are unknown in a library",
+  "description": "A library mapping may only use palette colours in the same file; bands are unknown in a library",
   "roundtrip": true,
   "issues": [
     {
@@ -14,9 +14,10 @@
       "code": "E003",
       "severity": "error",
       "location": {
+        "motif": "dots",
         "mapping": "two-colour",
-        "mappingRow": 1,
-        "color": "red"
+        "color": "red",
+        "path": "motifs[0].mappings[0].colors[1]"
       },
       "detail": "\"red\""
     }

@@ -16,11 +16,14 @@ pub const MAX_CHART_ROWS: usize = 1000;
 pub struct Resolved<'a> {
     pub palette: HashMap<&'a str, usize>,
     pub motifs: HashMap<&'a str, usize>,
-    pub mappings: HashMap<&'a str, usize>,
+    /// Per motif: mapping id → index into that motif's `mappings`.
+    pub mappings: Vec<HashMap<&'a str, usize>>,
     /// Motif shape is usable: rows present, rectangular, only 0/1/2, in range.
     pub motif_ok: Vec<bool>,
-    /// Mapping is usable: rows present, each with 2–3 known palette ids.
-    pub mapping_ok: Vec<bool>,
+    /// Per motif and mapping: the mapping can colour its motif. Its colours
+    /// are 1–10 known palette ids, and it has one row per motif row, each
+    /// 2–3 digits naming existing positions.
+    pub mapping_ok: Vec<Vec<bool>>,
 }
 
 fn first_index<'a, T>(items: &'a [T], id: impl Fn(&'a T) -> &'a str) -> HashMap<&'a str, usize> {
@@ -48,23 +51,51 @@ fn motif_shape_ok(motif: &Motif) -> bool {
             .all(|r| r.len() == w && r.bytes().all(|b| matches!(b, b'0' | b'1' | b'2')))
 }
 
+/// A mapping row is 2 or 3 digits.
+pub fn row_digits(row: &str) -> Option<Vec<usize>> {
+    let digits: Vec<usize> = row
+        .chars()
+        .map(|ch| ch.to_digit(10).map(|d| d as usize))
+        .collect::<Option<_>>()?;
+    (2..=3).contains(&digits.len()).then_some(digits)
+}
+
+fn colors_ok(mapping: &Mapping, palette: &HashMap<&str, usize>) -> bool {
+    let n = mapping.colors.len();
+    let distinct: HashSet<&str> = mapping.colors.iter().map(String::as_str).collect();
+    (1..=MAX_MAPPING_COLORS).contains(&n)
+        && distinct.len() == n
+        && mapping.colors.iter().all(|id| palette.contains_key(id.as_str()))
+}
+
 impl<'a> Resolved<'a> {
     pub fn new(doc: &'a Document) -> Self {
         let palette = first_index(&doc.palette, |c| c.id.as_str());
         let motif_ok = doc.motifs.iter().map(motif_shape_ok).collect();
         let mapping_ok = doc
-            .mappings
+            .motifs
             .iter()
-            .map(|m| {
-                !m.rows.is_empty()
-                    && m.rows.iter().all(|row| {
-                        (2..=3).contains(&row.len()) && row.iter().all(|id| palette.contains_key(id.as_str()))
+            .map(|motif| {
+                motif
+                    .mappings
+                    .iter()
+                    .map(|m| {
+                        colors_ok(m, &palette)
+                            && m.rows.len() == motif.rows.len()
+                            && m.rows.iter().all(|row| {
+                                row_digits(row).is_some_and(|digits| digits.iter().all(|d| *d < m.colors.len()))
+                            })
                     })
+                    .collect()
             })
             .collect();
         Resolved {
             motifs: first_index(&doc.motifs, |m| m.id.as_str()),
-            mappings: first_index(&doc.mappings, |m| m.id.as_str()),
+            mappings: doc
+                .motifs
+                .iter()
+                .map(|m| first_index(&m.mappings, |p| p.id.as_str()))
+                .collect(),
             palette,
             motif_ok,
             mapping_ok,
@@ -75,8 +106,9 @@ impl<'a> Resolved<'a> {
         self.motifs.get(id).copied()
     }
 
-    pub fn mapping(&self, id: &str) -> Option<usize> {
-        self.mappings.get(id).copied()
+    /// Index of mapping `id` within motif `motif`.
+    pub fn mapping(&self, motif: usize, id: &str) -> Option<usize> {
+        self.mappings.get(motif)?.get(id).copied()
     }
 
     /// The band's motif height times `times`, when both are usable.
@@ -106,6 +138,7 @@ pub fn check(doc: &Document) -> Vec<Issue> {
     c.palette();
     c.motifs();
     c.mappings();
+    c.missing_accent();
     if doc.kind == Kind::Pattern {
         c.bands();
         c.repeat_fit();
@@ -186,7 +219,15 @@ impl Checker<'_> {
         }
     }
 
-    fn ids<'b>(&mut self, collection: &str, ids: impl Iterator<Item = &'b str>, loc: impl Fn(&str) -> Location) {
+    /// E008 for invalid ids and E002 for repeats. `collection` is the path
+    /// of the list; `label` names it in messages.
+    fn ids<'b>(
+        &mut self,
+        collection: &str,
+        label: &str,
+        ids: impl Iterator<Item = &'b str>,
+        loc: impl Fn(&str) -> Location,
+    ) {
         let mut seen = HashSet::new();
         for (i, id) in ids.enumerate() {
             let path = format!("{collection}[{i}].id");
@@ -200,7 +241,7 @@ impl Checker<'_> {
             if !seen.insert(id) {
                 self.issues.push(Issue::error(
                     "E002",
-                    format!("Duplicate id \"{id}\" in {collection}"),
+                    format!("Duplicate id \"{id}\" in {label}"),
                     Location {
                         path: Some(path),
                         ..loc(id)
@@ -212,9 +253,11 @@ impl Checker<'_> {
 
     fn palette(&mut self) {
         let doc = self.doc;
-        self.ids("palette", doc.palette.iter().map(|c| c.id.as_str()), |id| Location {
-            color: Some(id.into()),
-            ..Location::default()
+        self.ids("palette", "palette", doc.palette.iter().map(|c| c.id.as_str()), |id| {
+            Location {
+                color: Some(id.into()),
+                ..Location::default()
+            }
         });
         for (i, c) in doc.palette.iter().enumerate() {
             if parse_hex(&c.hex).is_none() {
@@ -237,9 +280,11 @@ impl Checker<'_> {
 
     fn motifs(&mut self) {
         let doc = self.doc;
-        self.ids("motifs", doc.motifs.iter().map(|m| m.id.as_str()), |id| Location {
-            motif: Some(id.into()),
-            ..Location::default()
+        self.ids("motifs", "motifs", doc.motifs.iter().map(|m| m.id.as_str()), |id| {
+            Location {
+                motif: Some(id.into()),
+                ..Location::default()
+            }
         });
         for (i, motif) in doc.motifs.iter().enumerate() {
             let loc = |path: String, row: Option<usize>| Location {
@@ -316,54 +361,160 @@ impl Checker<'_> {
         }
     }
 
+    /// E002, E003, E006 and E008 for every motif's mappings.
     fn mappings(&mut self) {
         let doc = self.doc;
-        self.ids("mappings", doc.mappings.iter().map(|m| m.id.as_str()), |id| Location {
-            mapping: Some(id.into()),
-            ..Location::default()
-        });
-        for (i, mapping) in doc.mappings.iter().enumerate() {
-            let path = format!("mappings[{i}].rows");
-            if mapping.rows.is_empty() {
+        for (i, motif) in doc.motifs.iter().enumerate() {
+            let motif_path = format!("motifs[{i}].mappings");
+            if motif.mappings.is_empty() {
                 self.issues.push(Issue::error(
                     "E006",
-                    format!("Mapping \"{}\" has no rows", mapping.id),
+                    format!("Motif \"{}\" has no mappings; it needs at least one", motif.id),
                     Location {
-                        mapping: Some(mapping.id.clone()),
-                        path: Some(path),
+                        motif: Some(motif.id.clone()),
+                        path: Some(motif_path.clone()),
                         ..Location::default()
                     },
                 ));
-                continue;
             }
-            for (r, row) in mapping.rows.iter().enumerate() {
-                let loc = Location {
-                    mapping: Some(mapping.id.clone()),
-                    mapping_row: Some(r + 1),
-                    path: Some(format!("{path}[{r}]")),
+            self.ids(
+                &motif_path,
+                &format!("the mappings of motif \"{}\"", motif.id),
+                motif.mappings.iter().map(|m| m.id.as_str()),
+                |id| Location {
+                    motif: Some(motif.id.clone()),
+                    mapping: Some(id.into()),
                     ..Location::default()
-                };
-                if !(2..=3).contains(&row.len()) {
-                    self.issues.push(Issue::error(
-                        "E006",
-                        format!(
-                            "Mapping \"{}\" row {} has {} {}; it needs [background, foreground] or [background, foreground, accent]",
-                            mapping.id,
-                            r + 1,
-                            row.len(),
-                            if row.len() == 1 { "entry" } else { "entries" }
-                        ),
-                        loc.clone(),
-                    ));
+                },
+            );
+            // The row count is only compared with a motif whose rows are sound (no E004).
+            let width = motif_width(motif);
+            let height = (!motif.rows.is_empty() && width > 0 && motif.rows.iter().all(|r| r.chars().count() == width))
+                .then_some(motif.rows.len());
+            for (j, mapping) in motif.mappings.iter().enumerate() {
+                self.mapping(motif, mapping, &format!("{motif_path}[{j}]"), height);
+            }
+        }
+    }
+
+    fn mapping(&mut self, motif: &Motif, mapping: &Mapping, path: &str, height: Option<usize>) {
+        let name = format!("Mapping \"{}\" of motif \"{}\"", mapping.id, motif.id);
+        let loc = |path: String, row: Option<usize>| Location {
+            motif: Some(motif.id.clone()),
+            mapping: Some(mapping.id.clone()),
+            mapping_row: row,
+            path: Some(path),
+            ..Location::default()
+        };
+
+        let n = mapping.colors.len();
+        if n == 0 {
+            self.issues.push(Issue::error(
+                "E006",
+                format!("{name} has no colours"),
+                loc(format!("{path}.colors"), None),
+            ));
+        } else if n > MAX_MAPPING_COLORS {
+            self.issues.push(Issue::error(
+                "E006",
+                format!("{name} has {n} colours; a mapping may have at most {MAX_MAPPING_COLORS}"),
+                loc(format!("{path}.colors"), None),
+            ));
+        }
+        let mut seen = HashSet::new();
+        for (c, id) in mapping.colors.iter().enumerate() {
+            let at = format!("{path}.colors[{c}]");
+            if !seen.insert(id.as_str()) {
+                self.issues.push(Issue::error(
+                    "E006",
+                    format!("{name} lists colour \"{id}\" more than once"),
+                    Location {
+                        color: Some(id.clone()),
+                        ..loc(at.clone(), None)
+                    },
+                ));
+            }
+            if !self.r.palette.contains_key(id.as_str()) {
+                self.issues.push(Issue::error(
+                    "E003",
+                    format!("{name} uses unknown colour \"{id}\""),
+                    Location {
+                        color: Some(id.clone()),
+                        ..loc(at, None)
+                    },
+                ));
+            }
+        }
+
+        if let Some(h) = height {
+            if mapping.rows.len() != h {
+                self.issues.push(Issue::error(
+                    "E006",
+                    format!(
+                        "{name} has {} {}; it needs one per motif row ({h})",
+                        mapping.rows.len(),
+                        if mapping.rows.len() == 1 { "row" } else { "rows" }
+                    ),
+                    loc(format!("{path}.rows"), None),
+                ));
+            }
+        }
+        for (r, row) in mapping.rows.iter().enumerate() {
+            let at = format!("{path}.rows[{r}]");
+            match row_digits(row) {
+                None => self.issues.push(Issue::error(
+                    "E006",
+                    format!(
+                        "{name} row {} is \"{row}\"; it needs 2 or 3 digits: background, foreground and optionally accent",
+                        r + 1
+                    ),
+                    loc(at, Some(r + 1)),
+                )),
+                // With no colours at all, E006 above already says it.
+                Some(digits) if n > 0 => {
+                    let mut reported = HashSet::new();
+                    for d in digits {
+                        if d >= n && reported.insert(d) {
+                            self.issues.push(Issue::error(
+                                "E003",
+                                format!(
+                                    "{name} row {} uses colour {d}, but the mapping has no colour at position {d}",
+                                    r + 1
+                                ),
+                                loc(at.clone(), Some(r + 1)),
+                            ));
+                        }
+                    }
                 }
-                for id in row {
-                    if !self.r.palette.contains_key(id.as_str()) {
+                Some(_) => {}
+            }
+        }
+    }
+
+    /// E007: a motif row uses the accent but its mapping row has no accent
+    /// digit. Checked for every mapping, whether or not a band uses it.
+    fn missing_accent(&mut self) {
+        let doc = self.doc;
+        for motif in &doc.motifs {
+            for mapping in &motif.mappings {
+                for (r, (motif_row, row)) in motif.rows.iter().zip(&mapping.rows).enumerate() {
+                    let digits = row_digits(row);
+                    if motif_row.contains('2') && digits.is_some_and(|d| d.len() < 3) {
                         self.issues.push(Issue::error(
-                            "E003",
-                            format!("Mapping \"{}\" row {} uses unknown colour \"{id}\"", mapping.id, r + 1),
+                            "E007",
+                            format!(
+                                "Motif \"{}\" row {} uses the accent, but mapping \"{}\" row {} has no accent colour",
+                                motif.id,
+                                r + 1,
+                                mapping.id,
+                                r + 1
+                            ),
                             Location {
-                                color: Some(id.clone()),
-                                ..loc.clone()
+                                motif: Some(motif.id.clone()),
+                                mapping: Some(mapping.id.clone()),
+                                motif_row: Some(r + 1),
+                                mapping_row: Some(r + 1),
+                                ..Location::default()
                             },
                         ));
                     }
@@ -374,8 +525,6 @@ impl Checker<'_> {
 
     fn bands(&mut self) {
         let doc = self.doc;
-        // Chart row (0-based) where the current band starts, while known.
-        let mut start: Option<usize> = Some(0);
         let mut total: usize = 0;
         for (b, band) in doc.bands.iter().enumerate() {
             let loc = || Location {
@@ -383,7 +532,6 @@ impl Checker<'_> {
                 ..Location::default()
             };
             let motif = self.r.motif(&band.motif);
-            let mapping = self.r.mapping(&band.mapping);
             if motif.is_none() {
                 self.issues.push(Issue::error(
                     "E003",
@@ -395,16 +543,24 @@ impl Checker<'_> {
                     },
                 ));
             }
-            if mapping.is_none() {
-                self.issues.push(Issue::error(
-                    "E003",
-                    format!("Band {} uses unknown mapping \"{}\"", b + 1, band.mapping),
-                    Location {
-                        mapping: Some(band.mapping.clone()),
-                        path: Some(format!("bands[{b}].mapping")),
-                        ..loc()
-                    },
-                ));
+            if let Some(m) = motif {
+                if self.r.mapping(m, &band.mapping).is_none() {
+                    self.issues.push(Issue::error(
+                        "E003",
+                        format!(
+                            "Band {} uses mapping \"{}\", but motif \"{}\" has no mapping with that id",
+                            b + 1,
+                            band.mapping,
+                            band.motif
+                        ),
+                        Location {
+                            motif: Some(band.motif.clone()),
+                            mapping: Some(band.mapping.clone()),
+                            path: Some(format!("bands[{b}].mapping")),
+                            ..loc()
+                        },
+                    ));
+                }
             }
             if as_int(band.offset).is_none() {
                 self.issues.push(Issue::error(
@@ -427,18 +583,8 @@ impl Checker<'_> {
                 ));
             }
 
-            let height = self.r.band_height(doc, band);
-            if let (Some(m), Some(p), Some(h)) = (motif, mapping, height) {
-                if self.r.mapping_ok[p] {
-                    self.missing_accent(b, &doc.motifs[m], &doc.mappings[p], h, start);
-                }
-            }
-            match height {
-                Some(h) => {
-                    total = total.saturating_add(h);
-                    start = start.and_then(|s| s.checked_add(h));
-                }
-                None => start = None,
+            if let Some(h) = self.r.band_height(doc, band) {
+                total = total.saturating_add(h);
             }
         }
         if total > MAX_CHART_ROWS {
@@ -446,45 +592,6 @@ impl Checker<'_> {
                 "bands",
                 format!("The bands add up to {total} chart rows; the limit is {MAX_CHART_ROWS}"),
             ));
-        }
-    }
-
-    /// E007: a motif row uses the accent but the mapping row applied to it
-    /// has none. Reported once per (motif row, mapping row) pair.
-    fn missing_accent(&mut self, b: usize, motif: &Motif, mapping: &Mapping, height: usize, start: Option<usize>) {
-        let h = motif.rows.len();
-        let k = mapping.rows.len();
-        let uses_accent: Vec<bool> = motif.rows.iter().map(|r| r.contains('2')).collect();
-        if !uses_accent.iter().any(|u| *u) {
-            return;
-        }
-        let mut seen = HashSet::new();
-        // Every (j mod h, j mod k) pair occurs within the first h × k rows.
-        for j in 0..height.min(h.saturating_mul(k)) {
-            let r = j % h;
-            let p = j % k;
-            if uses_accent[r] && mapping.rows[p].len() < 3 && seen.insert((r, p)) {
-                self.issues.push(Issue::error(
-                    "E007",
-                    format!(
-                        "Band {}: motif \"{}\" row {} uses the accent, but mapping \"{}\" row {} has no accent colour",
-                        b + 1,
-                        motif.id,
-                        r + 1,
-                        mapping.id,
-                        p + 1
-                    ),
-                    Location {
-                        band: Some(b),
-                        motif: Some(motif.id.clone()),
-                        mapping: Some(mapping.id.clone()),
-                        row: start.map(|s| s + j + 1),
-                        motif_row: Some(r + 1),
-                        mapping_row: Some(p + 1),
-                        ..Location::default()
-                    },
-                ));
-            }
         }
     }
 
@@ -524,7 +631,8 @@ impl Checker<'_> {
         }
     }
 
-    /// W105: low L* contrast between background and foreground or accent.
+    /// W105: low L* contrast between background and foreground or accent,
+    /// for the slots the motif row uses.
     fn contrast(&mut self) {
         let doc = self.doc;
         let min = doc.settings.min_contrast;
@@ -535,42 +643,50 @@ impl Checker<'_> {
             let c = &doc.palette[*self.r.palette.get(id)?];
             parse_hex(&c.hex).map(lightness)
         };
-        for (i, mapping) in doc.mappings.iter().enumerate() {
-            if !self.r.mapping_ok[i] {
-                continue;
-            }
-            for (r, row) in mapping.rows.iter().enumerate() {
-                let bg = &row[0];
-                let Some(l_bg) = lightness_of(bg) else { continue };
-                let mut low = Vec::new();
-                for (role, id) in [("foreground", row.get(1)), ("accent", row.get(2))] {
-                    let Some(id) = id else { continue };
-                    if id == bg {
-                        // Same colour on purpose, such as a solid row.
-                        continue;
-                    }
-                    let Some(l) = lightness_of(id) else { continue };
-                    let diff = (l_bg - l).abs();
-                    if diff < min {
-                        low.push(format!("{role} {id} differs from background {bg} by {diff:.1} L*"));
-                    }
+        for (m, motif) in doc.motifs.iter().enumerate() {
+            for (p, mapping) in motif.mappings.iter().enumerate() {
+                if !self.r.mapping_ok[m][p] {
+                    continue;
                 }
-                if !low.is_empty() {
-                    self.issues.push(Issue::notice(
-                        "W105",
-                        format!(
-                            "Low contrast in mapping \"{}\" row {}: {} (minimum {})",
-                            mapping.id,
-                            r + 1,
-                            low.join("; "),
-                            crate::write::number(min)
-                        ),
-                        Location {
-                            mapping: Some(mapping.id.clone()),
-                            mapping_row: Some(r + 1),
-                            ..Location::default()
-                        },
-                    ));
+                for (r, row) in mapping.rows.iter().enumerate() {
+                    let Some(digits) = row_digits(row) else { continue };
+                    let motif_row = &motif.rows[r];
+                    let bg = &mapping.colors[digits[0]];
+                    let Some(l_bg) = lightness_of(bg) else { continue };
+                    let mut low = Vec::new();
+                    for (role, symbol, slot) in [("foreground", '1', 1), ("accent", '2', 2)] {
+                        let Some(d) = digits.get(slot) else { continue };
+                        if *d == digits[0] || !motif_row.contains(symbol) {
+                            // The background itself (such as a solid row), or a
+                            // slot this row does not use.
+                            continue;
+                        }
+                        let id = &mapping.colors[*d];
+                        let Some(l) = lightness_of(id) else { continue };
+                        let diff = (l_bg - l).abs();
+                        if diff < min {
+                            low.push(format!("{role} {id} differs from background {bg} by {diff:.1} L*"));
+                        }
+                    }
+                    if !low.is_empty() {
+                        self.issues.push(Issue::notice(
+                            "W105",
+                            format!(
+                                "Low contrast in mapping \"{}\" of motif \"{}\" row {}: {} (minimum {})",
+                                mapping.id,
+                                motif.id,
+                                r + 1,
+                                low.join("; "),
+                                crate::write::number(min)
+                            ),
+                            Location {
+                                motif: Some(motif.id.clone()),
+                                mapping: Some(mapping.id.clone()),
+                                mapping_row: Some(r + 1),
+                                ..Location::default()
+                            },
+                        ));
+                    }
                 }
             }
         }

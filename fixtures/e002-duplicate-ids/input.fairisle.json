@@ -13,14 +13,27 @@
   "motifs": [
     { "id": "dot", "rows": [
       "01"
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] },
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
     ] },
     { "id": "dot", "rows": [
       "10"
-    ] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
+    ] },
+    { "id": "ring", "rows": [
+      "11"
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01"
+      ] }
     ] }
   ],
   "bands": [

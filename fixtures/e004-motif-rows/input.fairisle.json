@@ -14,12 +14,15 @@
       "0101",
       "010",
       "0101"
+    ], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        "01",
+        "01",
+        "01"
+      ] }
     ] },
-    { "id": "empty", "rows": [] }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    { "id": "empty", "rows": [], "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [] }
     ] }
   ],
   "bands": [

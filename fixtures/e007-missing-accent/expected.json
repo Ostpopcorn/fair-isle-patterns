@@ -1,18 +1,17 @@
 {
-  "description": "Motif row 0120 with mapping row [cream, navy] produces E007 with the motif row, band and mapping row in its location",
+  "description": "Motif row 1 uses the accent. Mapping two has no accent digit there: E007, even though no band uses it. Mapping three has one, and row 2 needs none",
   "roundtrip": true,
   "issues": [
     {
       "code": "E007",
       "severity": "error",
       "location": {
-        "band": 0,
         "motif": "accent",
         "mapping": "two",
-        "row": 1,
         "motifRow": 1,
         "mappingRow": 1
-      }
+      },
+      "detail": "row 1"
     }
   ]
 }

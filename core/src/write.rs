@@ -5,7 +5,8 @@
 //! - known keys in the fixed order of the format reference, then unknown
 //!   fields sorted by key;
 //! - small objects (meta, gauge, settings, palette entries, bands) on one line;
-//! - one motif row and one mapping row per line;
+//! - one motif row and one mapping row per line, a motif's mappings nested
+//!   after its rows;
 //! - whole numbers without a decimal point;
 //! - a band's `times` only when it is not 1; `offset` always.
 
@@ -75,6 +76,10 @@ impl Fields {
         }
         self
     }
+    fn raw(&mut self, key: &str, value: String) -> &mut Self {
+        self.0.push((key.into(), value));
+        self
+    }
     fn num(&mut self, key: &str, value: f64) -> &mut Self {
         self.0.push((key.into(), number(value)));
         self
@@ -100,20 +105,27 @@ fn block_array(items: &[String], indent: &str) -> String {
     format!("[\n{}\n{indent}]", lines.join(",\n"))
 }
 
-/// `{ "id": "x", "name": "y", "rows": [` + rows + `] }` with the rows one
-/// per line.
-fn entry_with_rows(head: &Fields, rows: &[String], extra: &Extra, indent: &str) -> String {
-    let mut out = String::from("{ ");
-    for (k, v) in &head.0 {
-        out.push_str(&format!("{}: {}, ", quote(k), v));
-    }
-    out.push_str("\"rows\": ");
-    out.push_str(&block_array(rows, indent));
-    for (k, v) in extra {
-        out.push_str(&format!(", {}: {}", quote(k), inline_value(v)));
-    }
-    out.push_str(" }");
-    out
+/// `{ "id": "x", "name": "y", "rows": [` + rows + `] }`: the head fields
+/// on the first line, then each block array with one item per line.
+fn entry_with_blocks(head: &Fields, blocks: &[(&str, String)], extra: &Extra) -> String {
+    let mut parts: Vec<String> = head.0.iter().map(|(k, v)| format!("{}: {}", quote(k), v)).collect();
+    parts.extend(blocks.iter().map(|(k, v)| format!("{}: {v}", quote(k))));
+    parts.extend(extra.iter().map(|(k, v)| format!("{}: {}", quote(k), inline_value(v))));
+    format!("{{ {} }}", parts.join(", "))
+}
+
+fn quoted_rows(rows: &[String], indent: &str) -> String {
+    let rows: Vec<String> = rows.iter().map(|r| quote(r)).collect();
+    block_array(&rows, indent)
+}
+
+fn mapping_entry(mapping: &Mapping, indent: &str) -> String {
+    let colors: Vec<String> = mapping.colors.iter().map(|c| quote(c)).collect();
+    let mut head = Fields::new();
+    head.str("id", &mapping.id)
+        .opt("name", &mapping.name)
+        .raw("colors", format!("[{}]", colors.join(", ")));
+    entry_with_blocks(&head, &[("rows", quoted_rows(&mapping.rows, indent))], &mapping.extra)
 }
 
 pub fn write_document(doc: &Document) -> String {
@@ -172,36 +184,26 @@ pub fn write_document(doc: &Document) -> String {
         .collect();
     fields.push(("palette".into(), block_array(&palette, indent)));
 
+    let mapping_indent = "      ";
     let motifs: Vec<String> = doc
         .motifs
         .iter()
         .map(|motif| {
             let mut head = Fields::new();
             head.str("id", &motif.id).opt("name", &motif.name);
-            let rows: Vec<String> = motif.rows.iter().map(|r| quote(r)).collect();
-            entry_with_rows(&head, &rows, &motif.extra, item_indent)
+            let mappings: Vec<String> = motif
+                .mappings
+                .iter()
+                .map(|m| mapping_entry(m, mapping_indent))
+                .collect();
+            let blocks = [
+                ("rows", quoted_rows(&motif.rows, item_indent)),
+                ("mappings", block_array(&mappings, item_indent)),
+            ];
+            entry_with_blocks(&head, &blocks, &motif.extra)
         })
         .collect();
     fields.push(("motifs".into(), block_array(&motifs, indent)));
-
-    let mappings: Vec<String> = doc
-        .mappings
-        .iter()
-        .map(|mapping| {
-            let mut head = Fields::new();
-            head.str("id", &mapping.id).opt("name", &mapping.name);
-            let rows: Vec<String> = mapping
-                .rows
-                .iter()
-                .map(|row| {
-                    let ids: Vec<String> = row.iter().map(|id| quote(id)).collect();
-                    format!("[{}]", ids.join(", "))
-                })
-                .collect();
-            entry_with_rows(&head, &rows, &mapping.extra, item_indent)
-        })
-        .collect();
-    fields.push(("mappings".into(), block_array(&mappings, indent)));
 
     if doc.kind == Kind::Pattern {
         let bands: Vec<String> = doc

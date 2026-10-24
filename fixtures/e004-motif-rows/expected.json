@@ -1,5 +1,5 @@
 {
-  "description": "A motif whose rows differ in length, and a motif with no rows",
+  "description": "A motif whose rows differ in length, and a motif with no rows (their mappings' row counts are not compared)",
   "roundtrip": true,
   "issues": [
     {

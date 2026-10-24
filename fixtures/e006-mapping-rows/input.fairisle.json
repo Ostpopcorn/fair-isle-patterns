@@ -1,28 +1,57 @@
 {
   "format": "fairisle-pattern",
   "version": 1,
-  "meta": { "name": "Bad mapping rows" },
+  "meta": { "name": "Bad mappings" },
   "gauge": { "stitches": 28, "rows": 32, "per_cm": 10 },
   "cast_on": 2,
   "settings": { "float_notice": 5, "float_warning": 8, "max_colors_per_row": 2, "min_contrast": 15 },
   "palette": [
     { "id": "a", "hex": "#f2efe8", "name": "Light" },
-    { "id": "b", "hex": "#24283b", "name": "Dark" }
+    { "id": "b", "hex": "#24283b", "name": "Dark" },
+    { "id": "c1", "hex": "#111111" },
+    { "id": "c2", "hex": "#222222" },
+    { "id": "c3", "hex": "#333333" },
+    { "id": "c4", "hex": "#444444" },
+    { "id": "c5", "hex": "#555555" },
+    { "id": "c6", "hex": "#666666" },
+    { "id": "c7", "hex": "#777777" },
+    { "id": "c8", "hex": "#888888" },
+    { "id": "c9", "hex": "#999999" }
   ],
   "motifs": [
-    { "id": "dot", "rows": [
+    { "id": "none", "rows": [
       "01"
-    ] }
-  ],
-  "mappings": [
-    { "id": "none", "rows": [] },
-    { "id": "wide", "rows": [
-      ["a", "b"],
-      ["a", "b", "a", "b"],
-      ["a"]
+    ], "mappings": [] },
+    { "id": "dot", "rows": [
+      "01",
+      "10"
+    ], "mappings": [
+      { "id": "short", "colors": ["a", "b"], "rows": [
+        "01"
+      ] },
+      { "id": "bad", "colors": ["a", "b"], "rows": [
+        "0",
+        "0123"
+      ] },
+      { "id": "letters", "colors": ["a", "b"], "rows": [
+        "01",
+        "ab"
+      ] },
+      { "id": "empty", "colors": [], "rows": [
+        "00",
+        "00"
+      ] },
+      { "id": "eleven", "colors": ["a", "b", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"], "rows": [
+        "01",
+        "01"
+      ] },
+      { "id": "twice", "colors": ["a", "b", "a"], "rows": [
+        "01",
+        "01"
+      ] }
     ] }
   ],
   "bands": [
-    { "motif": "dot", "mapping": "wide", "offset": 0 }
+    { "motif": "dot", "mapping": "short", "offset": 0 }
   ]
 }

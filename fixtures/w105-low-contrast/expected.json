@@ -1,11 +1,12 @@
 {
-  "description": "Cream and beige are close in lightness: rows 1 and 3 of the mapping get W105 (row 3 through its accent)",
+  "description": "Cream and beige are close in lightness. Row 1 compares the foreground and row 3 the accent. Rows 4 and 5 also hold beige, but in a slot their motif row does not use, so they are not compared",
   "roundtrip": true,
   "issues": [
     {
       "code": "W105",
       "severity": "notice",
       "location": {
+        "motif": "stripe",
         "mapping": "soft",
         "mappingRow": 1
       },
@@ -15,6 +16,7 @@
       "code": "W105",
       "severity": "notice",
       "location": {
+        "motif": "stripe",
         "mapping": "soft",
         "mappingRow": 3
       },

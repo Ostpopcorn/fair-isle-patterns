@@ -1,5 +1,5 @@
 {
-  "description": "A mapping row with the same colour as background and foreground counts once, so 2 colours are fine; W105 does not compare a colour with itself",
+  "description": "A row whose background and foreground use the same position counts that colour once, so 2 colours are fine; W105 does not compare a colour with itself",
   "roundtrip": true,
   "issues": []
 }

@@ -8,11 +8,13 @@
     { "id": "b", "hex": "#24283b" }
   ],
   "motifs": [
-    { "id": "dot", "rows": "01" }
-  ],
-  "mappings": [
-    { "id": "ab", "rows": [
-      ["a", "b"]
+    { "id": "dot", "rows": "01", "mappings": [
+      { "id": "ab", "colors": ["a", "b"], "rows": [
+        ["a", "b"]
+      ] }
+    ] },
+    { "id": "bare", "rows": [
+      "01"
     ] }
   ],
   "bands": [

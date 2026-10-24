@@ -99,15 +99,23 @@ pub struct Motif {
     pub name: Option<String>,
     /// `rows[0]` is the bottom row; character 0 is the leftmost column.
     pub rows: Vec<String>,
+    /// The motif's colourways. Ids are unique within the motif.
+    pub mappings: Vec<Mapping>,
     pub extra: Extra,
 }
+
+/// The most colours one mapping may list.
+pub const MAX_MAPPING_COLORS: usize = 10;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Mapping {
     pub id: String,
     pub name: Option<String>,
-    /// Each row is `[bg, fg]` or `[bg, fg, accent]` (palette ids).
-    pub rows: Vec<Vec<String>>,
+    /// Palette ids; a row refers to them by position.
+    pub colors: Vec<String>,
+    /// One row per motif row, in the same order. Each row is 2 or 3 digits:
+    /// the positions in `colors` of background, foreground and accent.
+    pub rows: Vec<String>,
     pub extra: Extra,
 }
 
@@ -131,7 +139,6 @@ pub struct Document {
     pub settings: Settings,
     pub palette: Vec<Color>,
     pub motifs: Vec<Motif>,
-    pub mappings: Vec<Mapping>,
     /// First element = bottom band.
     pub bands: Vec<Band>,
     pub extra: Extra,
@@ -237,23 +244,23 @@ impl Document {
                 m.insert("id".into(), motif.id.clone().into());
                 put_opt(&mut m, "name", &motif.name);
                 m.insert("rows".into(), motif.rows.clone().into());
+                let mappings = motif
+                    .mappings
+                    .iter()
+                    .map(|mapping| {
+                        let mut p = Extra::new();
+                        p.insert("id".into(), mapping.id.clone().into());
+                        put_opt(&mut p, "name", &mapping.name);
+                        p.insert("colors".into(), mapping.colors.clone().into());
+                        p.insert("rows".into(), mapping.rows.clone().into());
+                        with_extra(p, &mapping.extra)
+                    })
+                    .collect();
+                m.insert("mappings".into(), Value::Array(mappings));
                 with_extra(m, &motif.extra)
             })
             .collect();
         root.insert("motifs".into(), Value::Array(motifs));
-
-        let mappings = self
-            .mappings
-            .iter()
-            .map(|mapping| {
-                let mut m = Extra::new();
-                m.insert("id".into(), mapping.id.clone().into());
-                put_opt(&mut m, "name", &mapping.name);
-                m.insert("rows".into(), mapping.rows.clone().into());
-                with_extra(m, &mapping.extra)
-            })
-            .collect();
-        root.insert("mappings".into(), Value::Array(mappings));
 
         if self.kind == Kind::Pattern {
             let bands = self

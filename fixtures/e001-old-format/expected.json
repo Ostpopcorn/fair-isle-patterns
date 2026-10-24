@@ -1,0 +1,32 @@
+{
+  "description": "A file written before mappings moved into their motifs: every motif lacks mappings (E001) and the top-level mappings list is unknown (W106)",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "motif": "peerie-x",
+        "path": "motifs[0].mappings"
+      },
+      "detail": "motifs[0].mappings"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "motif": "solid",
+        "path": "motifs[1].mappings"
+      },
+      "detail": "motifs[1].mappings"
+    },
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
+        "path": "mappings"
+      },
+      "detail": "mappings"
+    }
+  ]
+}

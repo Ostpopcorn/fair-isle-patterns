@@ -12,14 +12,19 @@
   ],
   "motifs": [
     { "id": "stripe", "rows": [
+      "0011",
+      "0011",
+      "0220",
+      "0000",
       "0011"
-    ] }
-  ],
-  "mappings": [
-    { "id": "soft", "rows": [
-      ["cream", "beige"],
-      ["cream", "navy"],
-      ["cream", "navy", "beige"]
+    ], "mappings": [
+      { "id": "soft", "colors": ["cream", "beige", "navy"], "rows": [
+        "01",
+        "02",
+        "021",
+        "01",
+        "021"
+      ] }
     ] }
   ],
   "bands": [
