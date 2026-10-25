@@ -1,5 +1,5 @@
 {
-  "description": "Out-of-range values: hex not #rrggbb, gauge ≤ 0, cast_on outside 1–1000, invalid colour and mapping ids, non-integer offset, times < 1, float_notice greater than float_warning",
+  "description": "Out-of-range values: hex not #rrggbb, gauge ≤ 0, cast_on outside 1–1000, invalid colour and mapping ids, non-integer offset, times < 1, spacer rows < 1 or not whole, float_notice greater than float_warning",
   "roundtrip": true,
   "issues": [
     {
@@ -64,6 +64,24 @@
         "path": "bands[1].times",
         "band": 1
       }
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "bands[2].rows",
+        "band": 2
+      },
+      "detail": "Band 3 rows"
+    },
+    {
+      "code": "E008",
+      "severity": "error",
+      "location": {
+        "path": "bands[3].rows",
+        "band": 3
+      },
+      "detail": "Band 4 rows"
     }
   ]
 }

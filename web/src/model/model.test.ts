@@ -176,42 +176,52 @@ describe('document helpers', () => {
 
   it('renaming an id updates references', () => {
     const doc = hat();
-    const m = D.renameMotif(doc, 'solid', 'plain-row');
-    expect('doc' in m && m.doc.bands.filter((b) => b.motif === 'plain-row')).toHaveLength(2);
-    const c = D.renameColor(doc, 'navy', 'midnight');
-    expect('doc' in c && D.findMapping(D.findMotif(c.doc, 'solid'), 'plain')!.colors).toEqual(['cream', 'midnight']);
-    const p = D.renameMapping(doc, 'solid', 'plain', 'calm');
-    expect('doc' in p && p.doc.bands.map((b) => b.mapping)).toEqual(['sunset', 'calm', 'flower-colors', 'calm']);
+    const m = D.renameMotif(doc, 'flower', 'bloom');
+    expect('doc' in m && m.doc.bands.filter((b) => !D.isSpacer(b) && b.motif === 'bloom')).toHaveLength(1);
+    const c = D.renameColor(doc, 'cream', 'ivory');
+    expect('doc' in c && D.findMapping(D.findMotif(c.doc, 'flower'), 'flower-colors')!.colors).toEqual(['ivory', 'rust', 'gold']);
+    // Spacers follow too.
+    expect('doc' in c && c.doc.bands.filter(D.isSpacer).map((b) => b.color)).toEqual(['ivory', 'ivory']);
+    const p = D.renameMapping(doc, 'peerie-x', 'sunset', 'calm');
+    expect('doc' in p && p.doc.bands.map((b) => (D.isSpacer(b) ? b.color : b.mapping))).toEqual(['calm', 'cream', 'flower-colors', 'cream']);
     // Mapping ids are only unique within their motif.
-    const twice = D.addMapping(doc, 'solid', 'Other').doc;
-    expect(D.renameMapping(twice, 'solid', 'other', 'plain')).toEqual({ error: 'The id “plain” is already used by another mapping of “solid”.' });
-    expect('doc' in D.renameMapping(doc, 'solid', 'plain', 'sunset')).toBe(true);
-    expect('error' in D.renameMapping(doc, 'solid', 'plain', 'Bad Id')).toBe(true);
+    const twice = D.addMapping(doc, 'peerie-x', 'Other').doc;
+    expect(D.renameMapping(twice, 'peerie-x', 'other', 'sunset')).toEqual({ error: 'The id “sunset” is already used by another mapping of “peerie-x”.' });
+    expect('doc' in D.renameMapping(doc, 'peerie-x', 'sunset', 'flower-colors')).toBe(true);
+    expect('error' in D.renameMapping(doc, 'peerie-x', 'sunset', 'Bad Id')).toBe(true);
     // The renamed documents stay valid.
     for (const r of [m, c, p]) if ('doc' in r) expect(validate(r.doc).some((i) => i.severity === 'error')).toBe(false);
   });
 
   it('deleting a motif used by a band is blocked, listing the bands', () => {
-    const result = D.deleteMotif(hat(), 'solid');
-    expect('blocked' in result && result.blocked).toMatch(/band 2 \(rows 6–6\), band 4 \(rows 12–13\)/);
+    const result = D.deleteMotif(hat(), 'peerie-x');
+    expect('blocked' in result && result.blocked).toMatch(/is used by band 1 \(rows 1–5\)\./);
     const free = D.deleteMotif({ ...hat(), motifs: [...hat().motifs, D.blankMotif(hat(), 'unused', ['1'])] }, 'unused');
     expect('doc' in free).toBe(true);
   });
 
   it('deleting a mapping is blocked while bands use it, or when it is the last one', () => {
-    const used = D.deleteMapping(hat(), 'solid', 'plain');
-    expect('blocked' in used && used.blocked).toMatch(/band 2/);
-    const { doc } = D.addMapping(hat(), 'solid', 'Spare');
-    const spare = D.deleteMapping(doc, 'solid', 'spare');
-    expect('doc' in spare && D.findMotif(spare.doc, 'solid')!.mappings.map((m) => m.id)).toEqual(['plain']);
+    const used = D.deleteMapping(hat(), 'peerie-x', 'sunset');
+    expect('blocked' in used && used.blocked).toMatch(/band 1/);
+    const { doc } = D.addMapping(hat(), 'peerie-x', 'Spare');
+    const spare = D.deleteMapping(doc, 'peerie-x', 'spare');
+    expect('doc' in spare && D.findMotif(spare.doc, 'peerie-x')!.mappings.map((m) => m.id)).toEqual(['sunset']);
     const lonely = { ...hat(), bands: [] };
-    const last = D.deleteMapping(lonely, 'solid', 'plain');
+    const last = D.deleteMapping(lonely, 'peerie-x', 'sunset');
     expect('blocked' in last && last.blocked).toMatch(/only mapping/);
   });
 
-  it('deleting a colour used by a mapping is blocked, listing the mappings', () => {
-    const result = D.deleteColor(hat(), 'navy');
-    expect('blocked' in result && result.blocked).toMatch(/“peerie-x \/ sunset”, “solid \/ plain”/);
+  it('deleting a colour used by mappings or spacers is blocked, listing them', () => {
+    const navy = D.deleteColor(hat(), 'navy');
+    expect('blocked' in navy && navy.blocked).toBe('Colour “navy” is used by mapping “peerie-x / sunset”. Remove it from it first.');
+    const cream = D.deleteColor(hat(), 'cream');
+    expect('blocked' in cream && cream.blocked).toBe(
+      'Colour “cream” is used by mappings “peerie-x / sunset”, “flower / flower-colors” and the spacers band 2 (row 6), band 4 (rows 12–13). Remove it from the mappings and give the spacers another colour first.',
+    );
+    const doc = { ...hat(), palette: [...hat().palette, { id: 'moss', hex: '#6b7a3a' }], bands: [...hat().bands, D.newSpacer('moss')] };
+    const moss = D.deleteColor(doc, 'moss');
+    expect('blocked' in moss && moss.blocked).toBe('Colour “moss” is used by the spacer band 5 (row 14). Give the spacer another colour first.');
+    expect('doc' in D.deleteColor({ ...doc, bands: hat().bands }, 'moss')).toBe(true);
   });
 
   it('duplicating a motif copies its mappings', () => {
@@ -223,12 +233,21 @@ describe('document helpers', () => {
     expect(D.findMotif(two, 'peerie-x')!.mappings.map((m) => m.id)).toEqual(['sunset', 'sunset-copy']);
   });
 
-  it('quick-add spacer reuses or creates an all-background motif', () => {
-    expect(D.ensureSpacer(hat()).id).toBe('solid');
-    const doc = { ...hat(), motifs: hat().motifs.filter((m) => m.id !== 'solid') };
-    const { doc: next, id } = D.ensureSpacer(doc);
-    expect(id).toBe('spacer');
-    expect(next.motifs.at(-1)).toEqual({ ...D.blankMotif(doc, 'spacer', ['0']), name: 'Spacer' });
+  it('spacers are bands of plain rows in one colour', () => {
+    const doc = hat();
+    expect(doc.bands.map(D.isSpacer)).toEqual([false, true, false, true]);
+    expect(doc.bands[3]).toEqual({ color: 'cream', rows: 2 });
+    expect(D.bandHeight(doc, doc.bands[3])).toBe(2);
+    expect(D.bandHeight(doc, D.newSpacer('cream', 0))).toBe(0);
+    // A spacer never counts as a user of a motif or mapping.
+    expect(D.bandsUsingMotif(doc, 'peerie-x')).toEqual([0]);
+    expect(D.spacersUsingColor(doc, 'cream')).toEqual([1, 3]);
+    // Changing a spacer's colour and height recolours its chart rows.
+    const next = D.updateBand(D.updateBand(doc, 1, { color: 'gold' }), 1, { rows: 3 });
+    const chart = compile(next)!;
+    expect(chart.height).toBe(15);
+    for (const y of [5, 6, 7]) expect(chart.palette[chart.cells[y * chart.width]]).toBe('gold');
+    expect(validate(next).filter((i) => i.severity === 'error')).toEqual([]);
   });
 
   it('band rows', () => {
@@ -287,13 +306,15 @@ describe('starter library', () => {
   it('has the promised content', () => {
     const motifs = libs().flatMap((l) => l.doc.motifs);
     const ids = motifs.map((m) => m.id);
-    expect(ids).toContain('spacer');
+    // Spacers are bands, not motifs.
+    expect(ids).not.toContain('spacer');
+    expect(motifs.every((m) => m.rows.some((r) => r.includes('1')))).toBe(true);
     expect(ids.filter((id) => id.startsWith('oxo'))).toHaveLength(5);
-    expect(motifs.filter((m) => m.rows.length <= 7 && m.id !== 'spacer').length).toBeGreaterThanOrEqual(10);
+    expect(motifs.filter((m) => m.rows.length <= 7).length).toBeGreaterThanOrEqual(10);
     expect(libs().find((l) => l.doc.motifs.length === 0)!.doc.palette).toHaveLength(12);
     for (const m of motifs) {
       expect(m.mappings.length, m.id).toBeGreaterThan(0);
-      if (m.id !== 'spacer') expect(m.mappings.map((p) => p.id), m.id).toEqual(expect.arrayContaining(['two-colour', 'light-on-dark']));
+      expect(m.mappings.map((p) => p.id), m.id).toEqual(expect.arrayContaining(['two-colour', 'light-on-dark']));
     }
     for (const l of libs()) expect(l.doc.meta.license).toBe('CC0-1.0');
   });

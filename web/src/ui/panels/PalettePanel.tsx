@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { PaletteColor } from '../../core/types';
 import { parseHex } from '../../model/color';
-import { deleteColor, describeMapping, mappingsUsingColor, renameColor, slugify, uniqueId, updateColor, withOptional } from '../../model/doc';
+import { deleteColor, describeBands, describeMapping, mappingsUsingColor, renameColor, slugify, spacersUsingColor, uniqueId, updateColor, withOptional } from '../../model/doc';
 import { importLibraryFile } from '../../state/actions';
 import { store, type AppState } from '../../state/store';
 import { Swatch } from '../components/common';
@@ -47,7 +47,12 @@ function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onTo
   const [hexText, setHexText] = useState(color.hex);
   useEffect(() => setHexText(color.hex), [color.hex]);
   const setHex = (hex: string) => store.edit((d) => updateColor(d, color.id, (c) => ({ ...c, hex })), { coalesce: `hex-${color.id}` });
-  const users = mappingsUsingColor(s.doc, color.id).map(describeMapping);
+  const mappings = mappingsUsingColor(s.doc, color.id).map(describeMapping);
+  const spacers = spacersUsingColor(s.doc, color.id);
+  const users = [
+    ...(mappings.length ? [`mapping${mappings.length > 1 ? 's' : ''} ${mappings.join(', ')}`] : []),
+    ...(spacers.length ? [`spacer${spacers.length > 1 ? 's' : ''} ${describeBands(s.doc, spacers)}`] : []),
+  ].join(' and ');
 
   return (
     <div class="card" style={{ gap: '6px', padding: '8px' }}>
@@ -76,7 +81,7 @@ function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onTo
         <button
           class="btn small icon ghost danger"
           aria-label={`Delete ${color.id}`}
-          title={users.length ? `Used by ${users.join(', ')}` : 'Delete'}
+          title={users ? `Used by ${users}` : 'Delete'}
           onClick={() => {
             const result = deleteColor(store.get().doc, color.id);
             if ('blocked' in result) store.ui({ dialog: { kind: 'message', title: 'This colour is in use', body: result.blocked } });
@@ -132,7 +137,7 @@ function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onTo
             </button>
           </div>
           <p class="small muted" style={{ gridColumn: '1 / -1', margin: 0 }}>
-            {users.length ? `Used by mapping${users.length > 1 ? 's' : ''} ${users.join(', ')}.` : 'Not used by any mapping.'}
+            {users ? `Used by ${users}.` : 'Not used by any mapping or spacer.'}
           </p>
         </div>
       )}

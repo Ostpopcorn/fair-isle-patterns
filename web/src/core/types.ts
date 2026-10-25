@@ -64,7 +64,8 @@ export interface Mapping {
   [unknown: string]: unknown;
 }
 
-export interface Band {
+/** A motif in one of its mappings. */
+export interface MotifBand {
   motif: string;
   mapping: string;
   offset: number;
@@ -72,6 +73,17 @@ export interface Band {
   name?: string;
   [unknown: string]: unknown;
 }
+
+/** Plain rows in one palette colour. A band with a `color` field is a
+ * spacer; see isSpacer. */
+export interface SpacerBand {
+  color: string;
+  rows: number;
+  name?: string;
+  [unknown: string]: unknown;
+}
+
+export type Band = MotifBand | SpacerBand;
 
 /** A normalized pattern document, as returned by parse. */
 export interface PatternDoc {
@@ -189,3 +201,4 @@ export const PATTERN_KEYS = [
 export const MOTIF_KEYS = ['id', 'name', 'rows', 'mappings'] as const;
 export const MAPPING_KEYS = ['id', 'name', 'colors', 'rows'] as const;
 export const BAND_KEYS = ['motif', 'mapping', 'offset', 'times', 'name'] as const;
+export const SPACER_KEYS = ['color', 'rows', 'name'] as const;

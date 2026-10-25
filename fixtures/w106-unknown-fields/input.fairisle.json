@@ -19,7 +19,8 @@
     ], "x-note": "kept" }
   ],
   "bands": [
-    { "motif": "dot", "mapping": "ab", "offset": 0, "comment": "from another tool" }
+    { "motif": "dot", "mapping": "ab", "offset": 0, "comment": "from another tool" },
+    { "color": "a", "rows": 1, "times": 2 }
   ],
   "x-editor": { "tools": ["pencil", "fill"], "zoom": 2 }
 }

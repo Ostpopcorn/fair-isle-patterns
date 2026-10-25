@@ -6,5 +6,5 @@
   "cast_on": 2,
   "palette": [{"id": "a", "hex": "#f2efe8"}, {"id": "b", "hex": "#24283b"}],
   "motifs": [{"id": "dot", "rows": ["01"], "mappings": [{"rows": ["01"], "colors": ["a", "b"], "id": "ab"}]}],
-  "bands": [{"motif": "dot", "mapping": "ab"}, {"motif": "dot", "mapping": "ab", "times": 1}, {"times": 3, "mapping": "ab", "motif": "dot"}]
+  "bands": [{"motif": "dot", "mapping": "ab"}, {"motif": "dot", "mapping": "ab", "times": 1}, {"times": 3, "mapping": "ab", "motif": "dot"}, {"name": "Edge", "color": "a"}]
 }

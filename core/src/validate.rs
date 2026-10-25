@@ -51,6 +51,11 @@ fn motif_shape_ok(motif: &Motif) -> bool {
             .all(|r| r.len() == w && r.bytes().all(|b| matches!(b, b'0' | b'1' | b'2')))
 }
 
+/// `n` as a whole number of at least 1.
+fn at_least_one(n: f64) -> Option<i64> {
+    as_int(n).filter(|n| *n >= 1)
+}
+
 /// A mapping row is 2 or 3 digits.
 pub fn row_digits(row: &str) -> Option<Vec<usize>> {
     let digits: Vec<usize> = row
@@ -111,15 +116,20 @@ impl<'a> Resolved<'a> {
         self.mappings.get(motif)?.get(id).copied()
     }
 
-    /// The band's motif height times `times`, when both are usable.
+    /// Rows the band takes in the chart, when usable: the motif height times
+    /// `times`, or a spacer's `rows`.
     pub fn band_height(&self, doc: &Document, band: &Band) -> Option<usize> {
-        let m = self.motif(&band.motif)?;
-        if !self.motif_ok[m] {
-            return None;
+        match &band.kind {
+            BandKind::Motif { motif, times, .. } => {
+                let m = self.motif(motif)?;
+                if !self.motif_ok[m] {
+                    return None;
+                }
+                let times = usize::try_from(at_least_one(*times)?).ok()?;
+                doc.motifs[m].rows.len().checked_mul(times)
+            }
+            BandKind::Spacer { rows, .. } => usize::try_from(at_least_one(*rows)?).ok(),
         }
-        let times = as_int(band.times).filter(|t| *t >= 1)?;
-        let times = usize::try_from(times).ok()?;
-        doc.motifs[m].rows.len().checked_mul(times)
     }
 }
 
@@ -531,56 +541,86 @@ impl Checker<'_> {
                 band: Some(b),
                 ..Location::default()
             };
-            let motif = self.r.motif(&band.motif);
-            if motif.is_none() {
-                self.issues.push(Issue::error(
-                    "E003",
-                    format!("Band {} uses unknown motif \"{}\"", b + 1, band.motif),
-                    Location {
-                        motif: Some(band.motif.clone()),
-                        path: Some(format!("bands[{b}].motif")),
-                        ..loc()
-                    },
-                ));
-            }
-            if let Some(m) = motif {
-                if self.r.mapping(m, &band.mapping).is_none() {
-                    self.issues.push(Issue::error(
-                        "E003",
-                        format!(
-                            "Band {} uses mapping \"{}\", but motif \"{}\" has no mapping with that id",
-                            b + 1,
-                            band.mapping,
-                            band.motif
-                        ),
-                        Location {
-                            motif: Some(band.motif.clone()),
-                            mapping: Some(band.mapping.clone()),
-                            path: Some(format!("bands[{b}].mapping")),
-                            ..loc()
-                        },
-                    ));
+            match &band.kind {
+                BandKind::Motif {
+                    motif,
+                    mapping,
+                    offset,
+                    times,
+                } => {
+                    let m = self.r.motif(motif);
+                    if m.is_none() {
+                        self.issues.push(Issue::error(
+                            "E003",
+                            format!("Band {} uses unknown motif \"{motif}\"", b + 1),
+                            Location {
+                                motif: Some(motif.clone()),
+                                path: Some(format!("bands[{b}].motif")),
+                                ..loc()
+                            },
+                        ));
+                    }
+                    if let Some(m) = m {
+                        if self.r.mapping(m, mapping).is_none() {
+                            self.issues.push(Issue::error(
+                                "E003",
+                                format!(
+                                    "Band {} uses mapping \"{mapping}\", but motif \"{motif}\" has no mapping with that id",
+                                    b + 1
+                                ),
+                                Location {
+                                    motif: Some(motif.clone()),
+                                    mapping: Some(mapping.clone()),
+                                    path: Some(format!("bands[{b}].mapping")),
+                                    ..loc()
+                                },
+                            ));
+                        }
+                    }
+                    if as_int(*offset).is_none() {
+                        self.issues.push(Issue::error(
+                            "E008",
+                            format!("Band {} offset must be a whole number", b + 1),
+                            Location {
+                                path: Some(format!("bands[{b}].offset")),
+                                ..loc()
+                            },
+                        ));
+                    }
+                    if at_least_one(*times).is_none() {
+                        self.issues.push(Issue::error(
+                            "E008",
+                            format!("Band {} times must be a whole number of at least 1", b + 1),
+                            Location {
+                                path: Some(format!("bands[{b}].times")),
+                                ..loc()
+                            },
+                        ));
+                    }
                 }
-            }
-            if as_int(band.offset).is_none() {
-                self.issues.push(Issue::error(
-                    "E008",
-                    format!("Band {} offset must be a whole number", b + 1),
-                    Location {
-                        path: Some(format!("bands[{b}].offset")),
-                        ..loc()
-                    },
-                ));
-            }
-            if !as_int(band.times).is_some_and(|t| t >= 1) {
-                self.issues.push(Issue::error(
-                    "E008",
-                    format!("Band {} times must be a whole number of at least 1", b + 1),
-                    Location {
-                        path: Some(format!("bands[{b}].times")),
-                        ..loc()
-                    },
-                ));
+                BandKind::Spacer { color, rows } => {
+                    if !self.r.palette.contains_key(color.as_str()) {
+                        self.issues.push(Issue::error(
+                            "E003",
+                            format!("Band {} is a spacer in unknown colour \"{color}\"", b + 1),
+                            Location {
+                                color: Some(color.clone()),
+                                path: Some(format!("bands[{b}].color")),
+                                ..loc()
+                            },
+                        ));
+                    }
+                    if at_least_one(*rows).is_none() {
+                        self.issues.push(Issue::error(
+                            "E008",
+                            format!("Band {} rows must be a whole number of at least 1", b + 1),
+                            Location {
+                                path: Some(format!("bands[{b}].rows")),
+                                ..loc()
+                            },
+                        ));
+                    }
+                }
             }
 
             if let Some(h) = self.r.band_height(doc, band) {
@@ -595,7 +635,8 @@ impl Checker<'_> {
         }
     }
 
-    /// W103: cast_on is not a multiple of a band's motif width.
+    /// W103: cast_on is not a multiple of a band's motif width. Spacers fit
+    /// any cast-on.
     fn repeat_fit(&mut self) {
         let doc = self.doc;
         let Some(cast_on) = as_int(doc.cast_on).filter(|n| (1..=MAX_CAST_ON).contains(n)) else {
@@ -609,7 +650,10 @@ impl Checker<'_> {
             [a, b, ..] => format!("Cast-on values that fit every band: {a} or {b}"),
         };
         for (b, band) in doc.bands.iter().enumerate() {
-            let Some(m) = self.r.motif(&band.motif).filter(|m| self.r.motif_ok[*m]) else {
+            let BandKind::Motif { motif, .. } = &band.kind else {
+                continue;
+            };
+            let Some(m) = self.r.motif(motif).filter(|m| self.r.motif_ok[*m]) else {
                 continue;
             };
             let motif = &doc.motifs[m];
@@ -693,11 +737,14 @@ impl Checker<'_> {
     }
 }
 
-/// Widths of the usable motifs used by bands.
+/// Widths of the usable motifs used by bands (spacers have none).
 pub fn band_widths(doc: &Document, r: &Resolved) -> Vec<usize> {
     doc.bands
         .iter()
-        .filter_map(|band| r.motif(&band.motif))
+        .filter_map(|band| match &band.kind {
+            BandKind::Motif { motif, .. } => r.motif(motif),
+            BandKind::Spacer { .. } => None,
+        })
         .filter(|m| r.motif_ok[*m])
         .map(|m| motif_width(&doc.motifs[m]))
         .collect()

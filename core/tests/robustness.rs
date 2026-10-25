@@ -113,7 +113,8 @@ fn odd_inputs_never_panic() {
     }
     let mut extreme = hat();
     extreme["cast_on"] = json!(1000);
-    extreme["bands"][3]["times"] = json!(1e15);
+    extreme["bands"][0]["times"] = json!(1e15);
+    extreme["bands"][3]["rows"] = json!(1e15);
     extreme["bands"][2]["offset"] = json!(-9007199254740991i64);
     exercise(&extreme);
 }

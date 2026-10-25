@@ -121,12 +121,25 @@ pub struct Mapping {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Band {
-    pub motif: String,
-    pub mapping: String,
-    pub offset: f64,
-    pub times: f64,
+    pub kind: BandKind,
     pub name: Option<String>,
     pub extra: Extra,
+}
+
+/// A band is a motif in one of its mappings, or a spacer: plain rows in one
+/// palette colour. A band with a `color` field is a spacer.
+#[derive(Clone, Debug, PartialEq)]
+pub enum BandKind {
+    Motif {
+        motif: String,
+        mapping: String,
+        offset: f64,
+        times: f64,
+    },
+    Spacer {
+        color: String,
+        rows: f64,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -268,10 +281,23 @@ impl Document {
                 .iter()
                 .map(|band| {
                     let mut m = Extra::new();
-                    m.insert("motif".into(), band.motif.clone().into());
-                    m.insert("mapping".into(), band.mapping.clone().into());
-                    m.insert("offset".into(), num(band.offset));
-                    m.insert("times".into(), num(band.times));
+                    match &band.kind {
+                        BandKind::Motif {
+                            motif,
+                            mapping,
+                            offset,
+                            times,
+                        } => {
+                            m.insert("motif".into(), motif.clone().into());
+                            m.insert("mapping".into(), mapping.clone().into());
+                            m.insert("offset".into(), num(*offset));
+                            m.insert("times".into(), num(*times));
+                        }
+                        BandKind::Spacer { color, rows } => {
+                            m.insert("color".into(), color.clone().into());
+                            m.insert("rows".into(), num(*rows));
+                        }
+                    }
                     put_opt(&mut m, "name", &band.name);
                     with_extra(m, &band.extra)
                 })

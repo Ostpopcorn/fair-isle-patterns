@@ -5,7 +5,7 @@
 
 import type { CompiledChart, Issue, PatternDoc, Severity } from '../core/types';
 import { displayRgb } from '../model/color';
-import { findMotif } from '../model/doc';
+import { findMotif, isSpacer } from '../model/doc';
 
 export interface Theme {
   background: string;
@@ -177,7 +177,9 @@ function numberStep(cell: number): number {
 /** Repeat boundary columns of a band: where a new motif repeat begins. */
 export function repeatColumns(doc: PatternDoc, bandIndex: number, n: number): number[] {
   const band = doc.bands[bandIndex];
-  const motif = band && findMotif(doc, band.motif);
+  // Spacers have no repeats.
+  if (!band || isSpacer(band)) return [];
+  const motif = findMotif(doc, band.motif);
   const w = motif?.rows[0]?.length ?? 0;
   if (!w || w >= n) return [];
   const shift = ((band.offset % w) + w) % w;

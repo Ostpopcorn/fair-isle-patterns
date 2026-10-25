@@ -35,7 +35,8 @@ A pattern is one self-contained file built from four layers:
    background, the foreground and the accent. A motif has one or more
    mappings.
 4. **Bands**: stacked bottom to top. Each band combines one motif, one of
-   that motif's mappings and a sideways offset.
+   that motif's mappings and a sideways offset. A spacer is a band of plain
+   rows in one palette colour, with no motif or mapping.
 
 The chart is never stored. It is computed from these layers every time
 they change.
@@ -143,6 +144,12 @@ and a navy, rust, gold, rust, navy foreground from bottom to top.
 
 ### Band
 
+A band is either a motif band or a spacer. A band with a `color` field is a
+spacer; any other band is a motif band. A band with both a `color` and a
+`motif` or `mapping` is an error (E001).
+
+A **motif band** knits a motif in one of its mappings:
+
 | Field     | Type    | Required | Meaning |
 |-----------|---------|----------|---------|
 | `motif`   | string  | yes | Motif id |
@@ -151,9 +158,17 @@ and a navy, rust, gold, rust, navy foreground from bottom to top.
 | `times`   | integer | no  | Default `1`. How many times the motif and its colours repeat vertically (≥ 1) |
 | `name`    | string  | no  | |
 
-A plain spacer is a band whose motif is all `0`; `times` sets its height.
-A spacer that changes colour from row to row needs an all-`0` motif with as
-many rows as the colour sequence.
+A **spacer** is plain rows in one palette colour:
+
+| Field   | Type    | Required | Meaning |
+|---------|---------|----------|---------|
+| `color` | string  | yes | Palette colour id |
+| `rows`  | integer | no  | Default `1`. Height in chart rows (≥ 1) |
+| `name`  | string  | no  | |
+
+A spacer has no offset, and `times` is not one of its fields. Stacked
+spacers in different colours make stripes. A motif band whose motif is all
+`0` is still valid and knits the same way.
 
 ### Identifiers
 
@@ -185,8 +200,9 @@ numbering:
 
 ## How the chart is compiled
 
-The chart is `cast_on` cells wide, with one row per motif row of every band,
-stacked bottom to top. For band `b` starting at chart row `R` (the sum of the
+The chart is `cast_on` cells wide. The bands are stacked bottom to top; a
+spacer adds `rows` rows in which every cell takes its `color`. For a motif
+band `b` starting at chart row `R` (the sum of the
 heights of the bands below it), with motif `M` of width `w` and height `h`,
 `times = t`, mapping `P` (one of `M`'s mappings) and offset `o`, the band is
 `h × t` rows tall, and for each band row `j` from `0` to `h × t − 1`:
@@ -222,14 +238,14 @@ Issues have a code, a severity, an English message and a location.
 
 | Code | Rule |
 |------|------|
-| E001 | The document is not structurally readable: not JSON (the message gives the line and column), not an object, `format` wrong, `version` missing or not an integer (or below 1), a required field missing, or a field of the wrong JSON type (for example `rows` that is not an array of strings) |
+| E001 | The document is not structurally readable: not JSON (the message gives the line and column), not an object, `format` wrong, `version` missing or not an integer (or below 1), a required field missing, a field of the wrong JSON type (for example `rows` that is not an array of strings), or a band with both a `color` and a `motif` or `mapping` |
 | E002 | Duplicate id within the palette, within the motifs, or within one motif's mappings (reported for every repeat after the first) |
-| E003 | Unknown reference: band → motif; band → mapping that its motif does not have; mapping `colors` → palette colour; a mapping row digit with no colour at that position |
+| E003 | Unknown reference: band → motif; band → mapping that its motif does not have; spacer `color` → palette colour; mapping `colors` → palette colour; a mapping row digit with no colour at that position |
 | E004 | A motif has no rows, empty rows, or rows of different lengths |
 | E005 | A motif contains a character other than `0`, `1`, `2` (including `.`, reserved for shaping) |
 | E006 | A motif has no mappings; a mapping's `colors` is empty, has more than 10 entries or lists a colour twice; a mapping's number of rows differs from its motif's height (not checked when the motif has E004); a mapping row that is not 2 or 3 digits |
 | E007 | A motif row uses `2` but the mapping row for it has no accent digit. Checked for every mapping of the motif, whether or not a band uses it, and reported once per mapping and row |
-| E008 | Out-of-range value: `hex` not `#rrggbb`; a gauge value ≤ 0; `cast_on` not a whole number in 1–1000; a motif over 200 × 200; more than 1000 chart rows; `offset` not a whole number; `times` not a whole number ≥ 1; `float_notice` < 2, not whole, or greater than `float_warning`; `max_colors_per_row` < 1; `min_contrast` outside 0–100; an id that does not match the identifier pattern; a pattern palette with fewer than 2 colours |
+| E008 | Out-of-range value: `hex` not `#rrggbb`; a gauge value ≤ 0; `cast_on` not a whole number in 1–1000; a motif over 200 × 200; more than 1000 chart rows; `offset` not a whole number; `times` or a spacer's `rows` not a whole number ≥ 1; `float_notice` < 2, not whole, or greater than `float_warning`; `max_colors_per_row` < 1; `min_contrast` outside 0–100; an id that does not match the identifier pattern; a pattern palette with fewer than 2 colours |
 
 E001 is checked first. When a document has E001 issues, the other checks do
 not run: on a structurally broken document they would only repeat the same
@@ -241,7 +257,7 @@ problem in other words.
 |------|----------|------|---------|
 | W101 | notice or warning | Long float (below) | `float_notice`, `float_warning` |
 | W102 | warning | More distinct colours in one chart row than the limit | `max_colors_per_row` |
-| W103 | warning | `cast_on` is not a multiple of a band's motif width; once per offending band | — |
+| W103 | warning | `cast_on` is not a multiple of a band's motif width; once per offending band (spacers fit any cast-on) | — |
 | W104 | — | Reserved for the shaping system | — |
 | W105 | notice | Low lightness contrast in a mapping row (below) | `min_contrast` |
 | W106 | notice | Unknown field ignored (and kept on save) | — |
@@ -347,7 +363,7 @@ minimal:
   followed by its rows one per line (see the [full example](#full-example));
 - whole numbers without a decimal point (`10`, not `10.0`);
 - defaults written out, except a band's `times`, which is omitted when it is
-  `1` (`offset` is always written);
+  `1` (`offset` and a spacer's `rows` are always written);
 - no column alignment, so renaming one item never touches other lines.
 
 Reading a canonical file and writing it again reproduces it byte for byte.
@@ -390,8 +406,9 @@ is reused rather than duplicated.
 
 ## Full example
 
-The body of a hat with a peerie band and a flower band using the accent. It
-is the fixture `fixtures/hat-basic/input.fairisle.json`, in canonical form.
+The body of a hat with a peerie band, a flower band using the accent and
+cream spacers. It is the fixture `fixtures/hat-basic/input.fairisle.json`,
+in canonical form.
 
 ```json
 {
@@ -423,13 +440,6 @@ is the fixture `fixtures/hat-basic/input.fairisle.json`, in canonical form.
         "01"
       ] }
     ] },
-    { "id": "solid", "rows": [
-      "0"
-    ], "mappings": [
-      { "id": "plain", "colors": ["cream", "navy"], "rows": [
-        "01"
-      ] }
-    ] },
     { "id": "flower", "rows": [
       "00010000",
       "00111000",
@@ -448,9 +458,9 @@ is the fixture `fixtures/hat-basic/input.fairisle.json`, in canonical form.
   ],
   "bands": [
     { "motif": "peerie-x", "mapping": "sunset", "offset": 0 },
-    { "motif": "solid", "mapping": "plain", "offset": 0 },
+    { "color": "cream", "rows": 1 },
     { "motif": "flower", "mapping": "flower-colors", "offset": 3 },
-    { "motif": "solid", "mapping": "plain", "offset": 0, "times": 2 }
+    { "color": "cream", "rows": 2 }
   ]
 }
 ```

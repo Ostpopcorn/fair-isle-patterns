@@ -425,6 +425,7 @@
   ],
   "bands": [
     { "motif": "tall", "mapping": "ab", "offset": 0, "times": 6 },
-    { "motif": "wide", "mapping": "ab", "offset": 0 }
+    { "motif": "wide", "mapping": "ab", "offset": 0 },
+    { "color": "a", "rows": 5 }
   ]
 }

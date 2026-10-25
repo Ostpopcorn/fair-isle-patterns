@@ -4,7 +4,7 @@
 
 import type { CompiledChart, PatternDoc } from '../core/types';
 import { displayRgb, lightness } from '../model/color';
-import { bandHeight, findMapping, findMotif } from '../model/doc';
+import { bandHeight, findMapping, findMotif, isSpacer } from '../model/doc';
 import { slotColor } from '../model/mapping';
 import { bandRanges, repeatColumns } from './chart';
 import { PdfDocument, type PdfPage, type Rgb, textWidth } from './pdf';
@@ -115,8 +115,10 @@ export function patternPdf(doc: PatternDoc, chart: CompiledChart, options: PdfOp
       doc.bands.forEach((b, i) => {
         const h = bandHeight(doc, b);
         if (y > paper.height - MARGIN - 20) return;
-        const motif = findMotif(doc, b.motif);
-        const label = `${i + 1}. rows ${row}–${row + h - 1}: ${b.name ?? motif?.name ?? b.motif} (motif ${b.motif}, mapping ${b.mapping}${b.offset ? `, offset ${b.offset}` : ''}${b.times > 1 ? `, ${b.times} times` : ''})`;
+        const what = isSpacer(b)
+          ? `${b.name ?? 'Spacer'} (spacer in ${colorName(doc, b.color)})`
+          : `${b.name ?? findMotif(doc, b.motif)?.name ?? b.motif} (motif ${b.motif}, mapping ${b.mapping}${b.offset ? `, offset ${b.offset}` : ''}${b.times > 1 ? `, ${b.times} times` : ''})`;
+        const label = `${i + 1}. ${h === 1 ? `row ${row}` : `rows ${row}–${row + h - 1}`}: ${what}`;
         page.text(MARGIN, y, label, 9);
         y += 12;
         row += h;
@@ -238,8 +240,9 @@ export function patternPdf(doc: PatternDoc, chart: CompiledChart, options: PdfOp
   let row = 1;
   doc.bands.forEach((band, b) => {
     const h = bandHeight(doc, band);
-    const motif = findMotif(doc, band.motif);
-    const mapping = findMapping(motif, band.mapping);
+    const motif = isSpacer(band) ? undefined : findMotif(doc, band.motif);
+    const mapping = isSpacer(band) ? undefined : findMapping(motif, band.mapping);
+    const title = band.name ?? (isSpacer(band) ? 'Spacer' : (motif?.name ?? band.motif));
     for (let j = 0; j < h; j++, row++) {
       if (!page || y > paper.height - MARGIN - 20) {
         page = pdf.addPage(paper.width, paper.height);
@@ -252,10 +255,11 @@ export function patternPdf(doc: PatternDoc, chart: CompiledChart, options: PdfOp
       }
       // The mapping has one row per motif row, so both repeat together.
       const r = j % (motif?.rows.length || 1);
-      const slot = (k: 0 | 1 | 2) => (mapping ? (slotColor(mapping, r, k) ?? undefined) : undefined);
+      // A spacer row is all background.
+      const slot = (k: 0 | 1 | 2) => (isSpacer(band) ? (k === 0 ? band.color : undefined) : mapping ? (slotColor(mapping, r, k) ?? undefined) : undefined);
       page.text(colX[0], y, String(row), 8.5, { bold: true });
       page.text(colX[1], y, String(b + 1), 8.5);
-      page.text(colX[2], y, (band.name ?? motif?.name ?? band.motif).slice(0, 22), 8.5);
+      page.text(colX[2], y, title.slice(0, 22), 8.5);
       swatchText(page, colX[3], y, slot(0));
       swatchText(page, colX[4], y, slot(1));
       swatchText(page, colX[5], y, slot(2));

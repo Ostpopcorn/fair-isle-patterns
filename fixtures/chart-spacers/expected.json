@@ -1,0 +1,20 @@
+{
+  "description": "Spacers are plain rows in one palette colour, rows high; stacked spacers make stripes. Spacers have no width, so they never affect the cast-on (no W103, no suggestions)",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "a": "a",
+      "b": "b",
+      "c": "c"
+    },
+    "rows": [
+      "ccccc",
+      "bbbbb",
+      "baaaa",
+      "aaaaa",
+      "aaaaa"
+    ]
+  },
+  "suggest_cast_on": []
+}

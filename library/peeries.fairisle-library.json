@@ -1,39 +1,15 @@
 {
   "format": "fairisle-library",
   "version": 1,
-  "meta": { "name": "Peeries", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Small peerie bands of 1 to 7 rows, and a plain spacer. Every float is at most 4 stitches. Each motif comes with two-colour, light-on-dark and (from 3 rows) gradient mappings in the neutral colours." },
+  "meta": { "name": "Peeries", "author": "Fair Isle Pattern Builder contributors", "license": "CC0-1.0", "description": "Small peerie bands of 1 to 7 rows. Every float is at most 4 stitches. Each motif comes with two-colour, light-on-dark and (from 3 rows) gradient mappings in the neutral colours." },
   "palette": [
     { "id": "natural", "hex": "#efe6d2", "name": "Natural white" },
-    { "id": "oatmeal", "hex": "#d8c9a8", "name": "Oatmeal" },
-    { "id": "moorit", "hex": "#7a5838", "name": "Moorit" },
     { "id": "black", "hex": "#1f1d1c", "name": "Black" },
     { "id": "navy", "hex": "#1f2a44", "name": "Navy" },
     { "id": "madder", "hex": "#a4452c", "name": "Madder red" },
     { "id": "gold", "hex": "#d9a441", "name": "Gold" }
   ],
   "motifs": [
-    { "id": "spacer", "name": "Spacer", "rows": [
-      "0"
-    ], "mappings": [
-      { "id": "natural", "name": "Natural white", "colors": ["natural"], "rows": [
-        "00"
-      ] },
-      { "id": "oatmeal", "name": "Oatmeal", "colors": ["oatmeal"], "rows": [
-        "00"
-      ] },
-      { "id": "moorit", "name": "Moorit", "colors": ["moorit"], "rows": [
-        "00"
-      ] },
-      { "id": "navy", "name": "Navy", "colors": ["navy"], "rows": [
-        "00"
-      ] },
-      { "id": "madder", "name": "Madder red", "colors": ["madder"], "rows": [
-        "00"
-      ] },
-      { "id": "gold", "name": "Gold", "colors": ["gold"], "rows": [
-        "00"
-      ] }
-    ] },
     { "id": "seed", "name": "Seed", "rows": [
       "10",
       "01"

@@ -1,5 +1,5 @@
 {
-  "description": "Unknown references: band to motif, band to a mapping its motif does not have (even when another motif has it), mapping colour to palette, row digit to colour position",
+  "description": "Unknown references: band to motif, band to a mapping its motif does not have (even when another motif has it), mapping colour to palette, row digit to colour position, spacer colour to palette",
   "roundtrip": true,
   "issues": [
     {
@@ -51,6 +51,16 @@
         "mapping": "ring-only"
       },
       "detail": "\"ring-only\""
+    },
+    {
+      "code": "E003",
+      "severity": "error",
+      "location": {
+        "band": 3,
+        "color": "x",
+        "path": "bands[3].color"
+      },
+      "detail": "spacer in unknown colour \"x\""
     }
   ]
 }

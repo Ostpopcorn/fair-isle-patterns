@@ -1,8 +1,22 @@
-import type { Band, Issue } from '../../core/types';
-import { addMapping, bandHeight, bandStartRows, blankMotif, ensureSpacer, findMapping, findMotif, moveItem, uniqueId, updateBand, withOptional } from '../../model/doc';
+import type { Band, Issue, Motif, MotifBand, SpacerBand } from '../../core/types';
+import {
+  addMapping,
+  bandHeight,
+  bandStartRows,
+  blankMotif,
+  findColor,
+  findMapping,
+  findMotif,
+  isSpacer,
+  moveItem,
+  newSpacer,
+  uniqueId,
+  updateBand,
+  withOptional,
+} from '../../model/doc';
 import { blank } from '../../model/motif';
 import { store, type AppState } from '../../state/store';
-import { Badge, MotifThumb, NumberField, mappingColors } from '../components/common';
+import { Badge, ColorSelect, MotifThumb, NumberField, mappingColors } from '../components/common';
 import { editMapping, editMotif } from '../navigate';
 
 /** The select value of the "+ New …" options (ids cannot start with +). */
@@ -41,6 +55,12 @@ function issuesByBand(issues: Issue[], starts: number[], heights: number[]): Map
   return out;
 }
 
+/** Changes fields of band i; edits with the same key coalesce into one undo
+ * step. */
+function setBand(i: number, patch: Partial<MotifBand> | Partial<SpacerBand>, key?: string): void {
+  store.edit((d) => updateBand(d, i, patch), key ? { coalesce: `band-${i}-${key}` } : {});
+}
+
 function moveBand(from: number, to: number): void {
   store.edit((doc) => ({ ...doc, bands: moveItem(doc.bands, from, to) }));
   store.ui({ bandIndex: to });
@@ -68,15 +88,12 @@ export function BandsPanel({ s }: { s: AppState }) {
   };
 
   const addSpacer = () => {
-    if (!doc.palette.length) {
-      store.ui({ dialog: { kind: 'message', title: 'No colours yet', body: 'A spacer is knitted in its mapping’s background colour. Add a colour to the palette first.' } });
+    const color = doc.palette[0]?.id;
+    if (!color) {
+      store.ui({ dialog: { kind: 'message', title: 'No colours yet', body: 'A spacer is knitted in one palette colour. Add a colour to the palette first.' } });
       return;
     }
-    store.edit((d) => {
-      const { doc: withSpacer, id } = ensureSpacer(d);
-      const mapping = findMotif(withSpacer, id)!.mappings[0].id;
-      return { ...withSpacer, bands: [...withSpacer.bands, { motif: id, mapping, offset: 0, times: 1, name: 'Spacer' }] };
-    });
+    store.edit((d) => ({ ...d, bands: [...d.bands, newSpacer(color)] }));
     store.ui({ bandIndex: doc.bands.length });
   };
 
@@ -88,7 +105,7 @@ export function BandsPanel({ s }: { s: AppState }) {
         <button class="btn small primary" onClick={addBand} disabled={s.readOnly}>
           + Band
         </button>
-        <button class="btn small" onClick={addSpacer} disabled={s.readOnly} title="Insert a plain band in the background colour">
+        <button class="btn small" onClick={addSpacer} disabled={s.readOnly} title="Add plain rows in one colour">
           + Spacer
         </button>
       </div>
@@ -111,14 +128,13 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
   const { s, band, index: i } = props;
   const doc = s.doc;
   const n = doc.bands.length;
-  const motif = findMotif(doc, band.motif);
-  const mapping = findMapping(motif, band.mapping);
-  const w = motif?.rows[0]?.length ?? 0;
-  const effective = w && Number.isInteger(band.offset) ? ((band.offset % w) + w) % w : null;
-  const set = (patch: Partial<Band>, key?: string) => store.edit((d) => updateBand(d, i, patch), key ? { coalesce: `band-${i}-${key}` } : {});
+  const spacer = isSpacer(band) ? band : null;
+  const motifBand = isSpacer(band) ? null : band;
+  const motif = motifBand ? findMotif(doc, motifBand.motif) : undefined;
   const count = (sev: Issue['severity']) => props.issues.filter((x) => x.severity === sev).length;
   const selected = s.ui.bandIndex === i;
-  const title = band.name || motif?.name || band.motif;
+  const placeholder = motifBand ? (motif?.name ?? motifBand.motif) : 'Spacer';
+  const title = band.name || placeholder;
 
   return (
     <div
@@ -138,13 +154,13 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
       }}
     >
       <div class="card-head">
-        {motif && <MotifThumb rows={motif.rows} colors={mapping && mappingColors(mapping, doc.palette)} grayscale={s.ui.grayscale} maxSize={48} across={w < 12 ? 2 : 1} label={`${band.motif} with ${band.mapping}`} />}
+        {spacer ? <SpacerThumb s={s} band={spacer} /> : motifBand && motif && <BandThumb s={s} band={motifBand} motif={motif} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <strong>
             {i + 1}. {title}
           </strong>
           <div class="small muted">
-            {props.height ? `rows ${props.start}–${props.start + props.height - 1} · ${props.height} row${props.height === 1 ? '' : 's'}` : 'no rows'}
+            {props.height === 0 ? 'no rows' : props.height === 1 ? `row ${props.start}` : `rows ${props.start}–${props.start + props.height - 1} · ${props.height} rows`}
           </div>
         </div>
         <Badge severity="error" count={count('error')} />
@@ -152,6 +168,133 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
         <Badge severity="notice" count={count('notice')} />
       </div>
 
+      {spacer && <SpacerFields s={s} band={spacer} index={i} />}
+      {motifBand && <MotifFields s={s} band={motifBand} index={i} motif={motif} />}
+
+      <label class="field">
+        <span>Name (optional)</span>
+        <input
+          type="text"
+          value={band.name ?? ''}
+          placeholder={placeholder}
+          onInput={(e) => store.edit((d) => ({ ...d, bands: d.bands.map((b, j) => (j === i ? withOptional(b, 'name', (e.currentTarget as HTMLInputElement).value) : b)) }), { coalesce: `band-${i}-name` })}
+        />
+      </label>
+
+      {props.issues.filter((x) => x.severity !== 'notice').slice(0, 3).map((issue, k) => (
+        <button key={k} class={`issue ${issue.severity}`} onClick={() => store.ui({ issue, view: 'chart', screen: 'view' })}>
+          <span>
+            <span class="code">{issue.code}</span>
+            {issue.message}
+          </span>
+        </button>
+      ))}
+
+      <div class="row wrap">
+        <button class="btn small icon" aria-label={`Move band ${i + 1} up`} title="Move up (Alt+↑)" disabled={i >= n - 1} onClick={() => moveBand(i, i + 1)}>
+          ↑
+        </button>
+        <button class="btn small icon" aria-label={`Move band ${i + 1} down`} title="Move down (Alt+↓)" disabled={i <= 0} onClick={() => moveBand(i, i - 1)}>
+          ↓
+        </button>
+        <span class="spacer" />
+        {motifBand && motif && (
+          <>
+            <button class="btn small ghost" title="Edit this band's mapping" onClick={() => editMapping(motif.id, motifBand.mapping)}>
+              <span class="long">Edit colours</span>
+              <span class="short">Colours</span>
+            </button>
+            <button class="btn small ghost" title="Edit the motif" onClick={() => editMotif(motif.id)}>
+              <span class="long">Edit motif</span>
+              <span class="short">Motif</span>
+            </button>
+          </>
+        )}
+        <button
+          class="btn small"
+          onClick={() => {
+            store.edit((d) => {
+              const bands = [...d.bands];
+              bands.splice(i + 1, 0, { ...band });
+              return { ...d, bands };
+            });
+            store.ui({ bandIndex: i + 1 });
+          }}
+        >
+          Duplicate
+        </button>
+        <button
+          class="btn small danger"
+          onClick={() => {
+            store.edit((d) => ({ ...d, bands: d.bands.filter((_, j) => j !== i) }));
+            store.ui({ bandIndex: null });
+          }}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BandThumb(props: { s: AppState; band: MotifBand; motif: Motif }) {
+  const { band, motif } = props;
+  const mapping = findMapping(motif, band.mapping);
+  const w = motif.rows[0]?.length ?? 0;
+  return (
+    <MotifThumb
+      rows={motif.rows}
+      colors={mapping && mappingColors(mapping, props.s.doc.palette)}
+      grayscale={props.s.ui.grayscale}
+      maxSize={48}
+      across={w < 12 ? 2 : 1}
+      label={`${band.motif} with ${band.mapping}`}
+    />
+  );
+}
+
+/** A stripe in the spacer's colour, up to 6 rows tall. */
+function SpacerThumb(props: { s: AppState; band: SpacerBand }) {
+  const color = findColor(props.s.doc, props.band.color);
+  if (!color) return null;
+  const rows = Math.min(6, Math.max(1, Math.floor(props.band.rows) || 1));
+  return <MotifThumb rows={Array(rows).fill('000000')} colors={() => color.hex} grayscale={props.s.ui.grayscale} maxSize={48} label={`Spacer in ${color.name ?? color.id}`} />;
+}
+
+function SpacerFields(props: { s: AppState; band: SpacerBand; index: number }) {
+  const { s, band, index: i } = props;
+  return (
+    <div class="row wrap">
+      <div class="field">
+        <span class="small muted">Colour</span>
+        <ColorSelect palette={s.doc.palette} value={band.color} label={`Band ${i + 1} colour`} grayscale={s.ui.grayscale} onChange={(id) => id && setBand(i, { color: id })} />
+      </div>
+      <div class="field">
+        <span class="small muted">Rows</span>
+        <span class="stepper">
+          <button class="btn small icon" aria-label="One row fewer" disabled={band.rows <= 1} onClick={() => setBand(i, { rows: Math.max(1, band.rows - 1) }, 'rows')}>
+            −
+          </button>
+          <NumberField ariaLabel={`Band ${i + 1} rows`} value={band.rows} min={1} onChange={(v) => setBand(i, { rows: v }, 'rows')} />
+          <button class="btn small icon" aria-label="One row more" onClick={() => setBand(i, { rows: band.rows + 1 }, 'rows')}>
+            +
+          </button>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MotifFields(props: { s: AppState; band: MotifBand; index: number; motif: Motif | undefined }) {
+  const { s, band, index: i, motif } = props;
+  const doc = s.doc;
+  const mapping = findMapping(motif, band.mapping);
+  const w = motif?.rows[0]?.length ?? 0;
+  const effective = w && Number.isInteger(band.offset) ? ((band.offset % w) + w) % w : null;
+  const set = (patch: Partial<MotifBand>, key?: string) => setBand(i, patch, key);
+
+  return (
+    <>
       <div class="grid2">
         <label class="field">
           <span>Motif</span>
@@ -227,69 +370,6 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
           </span>
         </div>
       </div>
-
-      <label class="field">
-        <span>Name (optional)</span>
-        <input
-          type="text"
-          value={band.name ?? ''}
-          placeholder={motif?.name ?? band.motif}
-          onInput={(e) => store.edit((d) => ({ ...d, bands: d.bands.map((b, j) => (j === i ? withOptional(b, 'name', (e.currentTarget as HTMLInputElement).value) : b)) }), { coalesce: `band-${i}-name` })}
-        />
-      </label>
-
-      {props.issues.filter((x) => x.severity !== 'notice').slice(0, 3).map((issue, k) => (
-        <button key={k} class={`issue ${issue.severity}`} onClick={() => store.ui({ issue, view: 'chart', screen: 'view' })}>
-          <span>
-            <span class="code">{issue.code}</span>
-            {issue.message}
-          </span>
-        </button>
-      ))}
-
-      <div class="row wrap">
-        <button class="btn small icon" aria-label={`Move band ${i + 1} up`} title="Move up (Alt+↑)" disabled={i >= n - 1} onClick={() => moveBand(i, i + 1)}>
-          ↑
-        </button>
-        <button class="btn small icon" aria-label={`Move band ${i + 1} down`} title="Move down (Alt+↓)" disabled={i <= 0} onClick={() => moveBand(i, i - 1)}>
-          ↓
-        </button>
-        <span class="spacer" />
-        {motif && (
-          <>
-            <button class="btn small ghost" title="Edit this band's mapping" onClick={() => editMapping(motif.id, band.mapping)}>
-              <span class="long">Edit colours</span>
-              <span class="short">Colours</span>
-            </button>
-            <button class="btn small ghost" title="Edit the motif" onClick={() => editMotif(motif.id)}>
-              <span class="long">Edit motif</span>
-              <span class="short">Motif</span>
-            </button>
-          </>
-        )}
-        <button
-          class="btn small"
-          onClick={() => {
-            store.edit((d) => {
-              const bands = [...d.bands];
-              bands.splice(i + 1, 0, { ...band });
-              return { ...d, bands };
-            });
-            store.ui({ bandIndex: i + 1 });
-          }}
-        >
-          Duplicate
-        </button>
-        <button
-          class="btn small danger"
-          onClick={() => {
-            store.edit((d) => ({ ...d, bands: d.bands.filter((_, j) => j !== i) }));
-            store.ui({ bandIndex: null });
-          }}
-        >
-          Delete
-        </button>
-      </div>
-    </div>
+    </>
   );
 }

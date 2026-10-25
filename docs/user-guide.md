@@ -16,7 +16,8 @@ Fair isle is designed in layers, and so is the app:
   optionally, which the accent. A motif can have several mappings.
 - **Bands**: the stack you knit, from the bottom up. Each band is a motif
   plus one of its mappings, slid sideways by an offset and repeated
-  vertically `times` times.
+  vertically `times` times. A **spacer** is simpler: plain rows in one
+  palette colour, with no motif or mapping.
 
 Change a mapping and every band using it changes. Give a band another of
 its motif's mappings and the same motif reads completely differently.
@@ -31,8 +32,9 @@ Patterns saved by early versions of the app, before mappings moved into
 their motifs, cannot be opened. The recent projects list marks such
 autosaves, and opening such a file explains why it does not open.
 
-A new pattern starts with three colours, a small peerie motif and a spacer,
-each with one mapping, so there is a chart to look at straight away.
+A new pattern starts with three colours, a small peerie motif with one
+mapping, and a two-row spacer below and above it, so there is a chart to
+look at straight away.
 
 ## The work areas (left)
 
@@ -48,11 +50,11 @@ band's rows and its issues.
   motif and opens it in the motif editor. *+ New mapping…* at the end of the
   mapping list gives the band a new mapping of its motif and opens it in the
   mapping editor. Either is one undo step.
-- *+ Spacer* adds a plain one-row band in the background colour of the
-  spacer motif's first mapping. A spacer that changes colour from row to row
-  needs a plain motif with as many rows as the colours.
-- *Edit colours* opens the band's mapping in the Motifs tab; *Edit motif*
-  opens its motif in the motif editor.
+- *+ Spacer* adds a spacer: one row in the first palette colour. A
+  spacer's card has only its colour and its number of rows. Stack spacers in
+  different colours for stripes.
+- *Edit colours* opens a motif band's mapping in the Motifs tab; *Edit
+  motif* opens its motif in the motif editor.
 - Reorder with ↑ ↓, or focus a card and press Alt+↑ / Alt+↓.
 
 **Motifs.** Pick a motif to see its details and colour mappings below the
@@ -83,8 +85,9 @@ each have a mapping called `default`.
 
 **Palette.** Pick colours with the colour picker or type a hex value. Add a
 name and the yarn (shade and number) so you can buy it again. *Import…*
-copies colours from a library file. A colour listed by a mapping cannot be
-deleted; the message lists the mappings.
+copies colours from a library file. A colour listed by a mapping or used by
+a spacer cannot be deleted; the message lists them. Changing a colour's id
+updates the mappings and spacers that use it.
 
 **Project.** Name, author, licence and description; the gauge (stitches and
 rows per 10 cm) and the cast-on, which is the chart width. *Pattern

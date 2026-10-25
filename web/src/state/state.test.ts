@@ -69,15 +69,16 @@ describe('store', () => {
     expect(shown.chart.height).toBe(13);
   });
 
-  it('a mapping colour change reaches the chart quickly', () => {
+  it('a colour change reaches the chart quickly', () => {
     const store = new Store(hat());
     store.analysis();
     const start = performance.now();
-    store.edit((d) => updateMapping(d, 'solid', 'plain', (m) => ({ ...m, colors: ['gold', 'navy'] })));
+    store.edit((d) => updateMapping(d, 'flower', 'flower-colors', (m) => ({ ...m, colors: ['navy', 'rust', 'gold'] })));
+    store.edit((d) => updateBand(d, 1, { color: 'gold' }));
     const chart = store.analysis().chart!;
     expect(performance.now() - start).toBeLessThan(100);
-    const gold = chart.palette.indexOf('gold');
-    expect(chart.cells[5 * chart.width]).toBe(gold); // row 6 is the plain spacer
+    expect(chart.palette[chart.cells[5 * chart.width]]).toBe('gold'); // row 6 is a spacer
+    expect(chart.palette[chart.cells[6 * chart.width + 1]]).toBe('navy'); // the flower's background in row 7
   });
 
   it('tracks unsaved changes against the saved text', () => {

@@ -6,7 +6,7 @@ and appear under *Library…*.
 
 | File | Contents |
 |------|----------|
-| `peeries.fairisle-library.json` | A plain spacer and 10 peerie bands of 1–7 rows. No float is longer than 4 stitches. Each peerie has two-colour, light-on-dark and (from 3 rows) gradient mappings; the spacer has one mapping per background colour. |
+| `peeries.fairisle-library.json` | 10 peerie bands of 1–7 rows. No float is longer than 4 stitches. Each peerie has two-colour, light-on-dark and (from 3 rows) gradient mappings. |
 | `oxo-stars.fairisle-library.json` | 5 OXO bands and 3 large stars. No float is longer than 7 stitches. Each has two-colour, light-on-dark and shaded mappings. |
 | `neutral.fairisle-library.json` | A neutral 12-colour palette. The mappings in the other files use these colours. |
 

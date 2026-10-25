@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { store, type AppState } from '../../state/store';
 import { currentTheme } from '../../render/chart';
 import { drawRound } from '../../render/round';
-import { findMotif } from '../../model/doc';
+import { findMotif, isSpacer } from '../../model/doc';
 import { prepare, useCanvasSize, useFrame, useGestures, useZoomKeys } from './canvas';
 import { ZoomControls } from './ZoomControls';
 
@@ -61,7 +61,7 @@ export function RoundView({ s }: { s: AppState }) {
   }
 
   // One repeat of the widest band's motif, for the step buttons.
-  const widths = doc.bands.map((b) => findMotif(doc, b.motif)?.rows[0]?.length ?? 1);
+  const widths = doc.bands.map((b) => (isSpacer(b) ? 1 : (findMotif(doc, b.motif)?.rows[0]?.length ?? 1)));
   const repeat = Math.max(1, ...widths);
   const step = (TURN * Math.min(repeat, chart.width)) / chart.width;
   const degrees = Math.round(((((rotation / TURN) % 1) + 1) % 1) * 360);

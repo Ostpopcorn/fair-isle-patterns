@@ -1,5 +1,5 @@
 {
-  "description": "Missing optional fields (settings, gauge.per_cm, offset, times) get their defaults; saving writes the canonical form",
+  "description": "Missing optional fields (settings, gauge.per_cm, offset, times, a spacer's rows) get their defaults; saving writes the canonical form",
   "roundtrip": false,
   "issues": [],
   "canonical": "canonical.fairisle.json"

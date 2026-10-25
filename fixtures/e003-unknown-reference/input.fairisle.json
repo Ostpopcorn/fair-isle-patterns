@@ -34,6 +34,7 @@
   "bands": [
     { "motif": "star", "mapping": "ab", "offset": 0 },
     { "motif": "dot", "mapping": "zz", "offset": 0 },
-    { "motif": "dot", "mapping": "ring-only", "offset": 0 }
+    { "motif": "dot", "mapping": "ring-only", "offset": 0 },
+    { "color": "x", "rows": 1 }
   ]
 }

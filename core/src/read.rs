@@ -524,24 +524,50 @@ impl Reader {
             band: Some(index),
             ..Location::default()
         };
-        let Some(map) = v.as_object() else {
-            self.wrong_type(path, "an object", v, &loc);
-            return Band {
+        // Stands in for a band that cannot be read.
+        let unreadable = || Band {
+            kind: BandKind::Motif {
                 motif: String::new(),
                 mapping: String::new(),
                 offset: 0.0,
                 times: 1.0,
-                name: None,
-                extra: Extra::new(),
-            };
+            },
+            name: None,
+            extra: Extra::new(),
         };
+        let Some(map) = v.as_object() else {
+            self.wrong_type(path, "an object", v, &loc);
+            return unreadable();
+        };
+        if !map.contains_key("color") {
+            return Band {
+                kind: BandKind::Motif {
+                    motif: self.req_string(map, "motif", &path, &loc),
+                    mapping: self.req_string(map, "mapping", &path, &loc),
+                    offset: self.opt_number(map, "offset", 0.0, &path, &loc),
+                    times: self.opt_number(map, "times", 1.0, &path, &loc),
+                },
+                name: self.opt_string(map, "name", &path, &loc),
+                extra: self.extras(map, &["motif", "mapping", "offset", "times", "name"], &path, &loc),
+            };
+        }
+        if map.contains_key("motif") || map.contains_key("mapping") {
+            self.e001(
+                format!("{path} has both a motif and a color: a band is either a motif band (motif and mapping) or a spacer (color and rows)"),
+                Location {
+                    path: Some(path),
+                    ..loc
+                },
+            );
+            return unreadable();
+        }
         Band {
-            motif: self.req_string(map, "motif", &path, &loc),
-            mapping: self.req_string(map, "mapping", &path, &loc),
-            offset: self.opt_number(map, "offset", 0.0, &path, &loc),
-            times: self.opt_number(map, "times", 1.0, &path, &loc),
+            kind: BandKind::Spacer {
+                color: self.req_string(map, "color", &path, &loc),
+                rows: self.opt_number(map, "rows", 1.0, &path, &loc),
+            },
             name: self.opt_string(map, "name", &path, &loc),
-            extra: self.extras(map, &["motif", "mapping", "offset", "times", "name"], &path, &loc),
+            extra: self.extras(map, &["color", "rows", "name"], &path, &loc),
         }
     }
 }

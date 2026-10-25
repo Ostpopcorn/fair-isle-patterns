@@ -20,6 +20,8 @@
   ],
   "bands": [
     { "motif": "dot", "mapping": "AB", "offset": 1.5 },
-    { "motif": "dot", "mapping": "AB", "offset": 0, "times": 0 }
+    { "motif": "dot", "mapping": "AB", "offset": 0, "times": 0 },
+    { "color": "a", "rows": 0 },
+    { "color": "a", "rows": 2.5 }
   ]
 }

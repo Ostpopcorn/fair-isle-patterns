@@ -42,10 +42,26 @@ pub fn build(doc: &Document) -> CompiledChart {
     };
 
     for (b, band) in doc.bands.iter().enumerate() {
-        let Some(m) = r.motif(&band.motif) else { continue };
-        let (Some(p), Some(height)) = (r.mapping(m, &band.mapping), r.band_height(doc, band)) else {
+        let Some(height) = r.band_height(doc, band) else {
             continue;
         };
+        let (motif_id, mapping_id, offset) = match &band.kind {
+            BandKind::Motif {
+                motif, mapping, offset, ..
+            } => (motif, mapping, *offset),
+            BandKind::Spacer { color, .. } => {
+                let Some(&color) = r.palette.get(color.as_str()) else {
+                    continue;
+                };
+                chart.cells.extend(std::iter::repeat_n(color as u16, height * width));
+                chart.symbols.extend(std::iter::repeat_n(0, height * width));
+                chart.row_band.extend(std::iter::repeat_n(b as u16, height));
+                chart.height += height;
+                continue;
+            }
+        };
+        let Some(m) = r.motif(motif_id) else { continue };
+        let Some(p) = r.mapping(m, mapping_id) else { continue };
         if !r.mapping_ok[m][p] {
             continue;
         }
@@ -71,7 +87,7 @@ pub fn build(doc: &Document) -> CompiledChart {
             })
             .collect();
         let h = rows.len();
-        let shift = as_int(band.offset).unwrap_or(0).rem_euclid(w as i64) as usize;
+        let shift = as_int(offset).unwrap_or(0).rem_euclid(w as i64) as usize;
 
         chart.cells.reserve(height * width);
         chart.symbols.reserve(height * width);

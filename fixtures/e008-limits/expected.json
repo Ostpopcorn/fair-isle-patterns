@@ -1,5 +1,5 @@
 {
-  "description": "A motif over 200×200 and more than 1000 chart rows",
+  "description": "A motif over 200×200 and more than 1000 chart rows (spacer rows count too)",
   "roundtrip": true,
   "issues": [
     {
@@ -16,7 +16,7 @@
       "location": {
         "path": "bands"
       },
-      "detail": "1200 chart rows"
+      "detail": "1205 chart rows"
     }
   ]
 }

@@ -14,6 +14,7 @@ import {
   MAPPING_KEYS,
   MOTIF_KEYS,
   PARSE_KEYS,
+  SPACER_KEYS,
   PATTERN_KEYS,
   compile,
   layout,
@@ -101,10 +102,17 @@ describe('types.ts stays in sync with the core', () => {
     const parsed = parse(fixtureText('hat-basic'));
     expect(Object.keys(parsed).sort()).toEqual([...PARSE_KEYS].sort());
     expect(Object.keys(parsed.doc!).sort()).toEqual([...PATTERN_KEYS].sort());
-    for (const band of (parsed.doc as PatternDoc).bands) {
-      for (const key of Object.keys(band)) expect(BAND_KEYS).toContain(key);
-      expect(typeof band.offset).toBe('number');
-      expect(typeof band.times).toBe('number');
+    const bands = (parsed.doc as PatternDoc).bands;
+    expect(bands.some((b) => 'color' in b)).toBe(true);
+    for (const band of bands) {
+      if ('color' in band) {
+        for (const key of Object.keys(band)) expect(SPACER_KEYS).toContain(key);
+        expect(typeof band.rows).toBe('number');
+      } else {
+        for (const key of Object.keys(band)) expect(BAND_KEYS).toContain(key);
+        expect(typeof band.offset).toBe('number');
+        expect(typeof band.times).toBe('number');
+      }
     }
     for (const motif of (parsed.doc as PatternDoc).motifs) {
       for (const key of Object.keys(motif)) expect(MOTIF_KEYS).toContain(key);

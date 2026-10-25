@@ -26,8 +26,8 @@ themselves, version their work and like to tinker.
   mappings, with a live tiled preview.
 - Mapping editor under each motif, with reverse and shift helpers; palette
   with yarn names;
-  band stack with offsets, vertical repeats, spacers and keyboard
-  reordering.
+  band stack with offsets, vertical repeats, one-colour spacers and
+  keyboard reordering.
 - Issues panel grouped by severity, with highlighting of every offending
   float in the chart.
 - Grayscale view in every view and export.

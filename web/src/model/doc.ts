@@ -2,7 +2,7 @@
 // updates. Documents are never mutated; every helper returns a new object
 // and keeps unknown fields.
 
-import type { Band, Mapping, Motif, PaletteColor, PatternDoc, Settings } from '../core/types';
+import type { Band, Mapping, Motif, MotifBand, PaletteColor, PatternDoc, Settings, SpacerBand } from '../core/types';
 import { defaultMapping } from './mapping';
 
 export const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
@@ -42,7 +42,6 @@ export const DEFAULT_SETTINGS: Settings = {
   min_contrast: 15,
 };
 
-export const SPACER_ID = 'spacer';
 export const DEFAULT_MAPPING_ID = 'default';
 
 export function newPattern(settings: Settings = DEFAULT_SETTINGS, now = new Date()): PatternDoc {
@@ -60,26 +59,35 @@ export function newPattern(settings: Settings = DEFAULT_SETTINGS, now = new Date
     cast_on: 120,
     settings: { ...settings },
     palette,
-    motifs: [
-      { id: 'peerie-x', name: 'Peerie X', rows: ['100001', '010010', '001100', '010010', '100001'], mappings: [defaultMapping(DEFAULT_MAPPING_ID, palette, 5)] },
-      { id: SPACER_ID, name: 'Spacer', rows: ['0'], mappings: [defaultMapping(DEFAULT_MAPPING_ID, palette, 1)] },
-    ],
-    bands: [
-      { motif: SPACER_ID, mapping: DEFAULT_MAPPING_ID, offset: 0, times: 2 },
-      { motif: 'peerie-x', mapping: DEFAULT_MAPPING_ID, offset: 0, times: 1 },
-      { motif: SPACER_ID, mapping: DEFAULT_MAPPING_ID, offset: 0, times: 2 },
-    ],
+    motifs: [{ id: 'peerie-x', name: 'Peerie X', rows: ['100001', '010010', '001100', '010010', '100001'], mappings: [defaultMapping(DEFAULT_MAPPING_ID, palette, 5)] }],
+    bands: [newSpacer('cream', 2), { motif: 'peerie-x', mapping: DEFAULT_MAPPING_ID, offset: 0, times: 1 }, newSpacer('cream', 2)],
   };
+}
+
+// ---- bands ----
+
+/** A band with a `color` field is a spacer, as in the core. */
+export function isSpacer(band: Band): band is SpacerBand {
+  return 'color' in band;
+}
+
+export function newSpacer(color: string, rows = 1): SpacerBand {
+  return { color, rows };
 }
 
 // ---- references ----
 
 export function bandsUsingMotif(doc: PatternDoc, id: string): number[] {
-  return doc.bands.flatMap((b, i) => (b.motif === id ? [i] : []));
+  return doc.bands.flatMap((b, i) => (!isSpacer(b) && b.motif === id ? [i] : []));
 }
 
 export function bandsUsingMapping(doc: PatternDoc, motifId: string, mappingId: string): number[] {
-  return doc.bands.flatMap((b, i) => (b.motif === motifId && b.mapping === mappingId ? [i] : []));
+  return doc.bands.flatMap((b, i) => (!isSpacer(b) && b.motif === motifId && b.mapping === mappingId ? [i] : []));
+}
+
+/** Spacers in the colour. */
+export function spacersUsingColor(doc: PatternDoc, id: string): number[] {
+  return doc.bands.flatMap((b, i) => (isSpacer(b) && b.color === id ? [i] : []));
 }
 
 export interface MappingRef {
@@ -110,10 +118,14 @@ export function findColor(doc: PatternDoc, id: string): PaletteColor | undefined
   return doc.palette.find((c) => c.id === id);
 }
 
-/** Rows a band occupies: motif height × times, or 0 if unknown. */
+const atLeastOne = (n: number) => Number.isInteger(n) && n >= 1;
+
+/** Rows a band occupies: motif height × times, or a spacer's rows; 0 if
+ * unknown. */
 export function bandHeight(doc: PatternDoc, band: Band): number {
+  if (isSpacer(band)) return atLeastOne(band.rows) ? band.rows : 0;
   const motif = findMotif(doc, band.motif);
-  return motif && Number.isInteger(band.times) && band.times >= 1 ? motif.rows.length * band.times : 0;
+  return motif && atLeastOne(band.times) ? motif.rows.length * band.times : 0;
 }
 
 /** First chart row (1-based) of every band. */
@@ -127,14 +139,15 @@ export function bandStartRows(doc: PatternDoc): number[] {
   return starts;
 }
 
-/** Bands as "Band 2 (rows 6–10)" for messages. */
+/** Bands as "band 2 (rows 6–10)" for messages. */
 export function describeBands(doc: PatternDoc, indexes: number[]): string {
   const starts = bandStartRows(doc);
   return indexes
     .map((i) => {
       const h = bandHeight(doc, doc.bands[i]);
       const name = doc.bands[i].name ? ` “${doc.bands[i].name}”` : '';
-      return `band ${i + 1}${name} (rows ${starts[i]}–${starts[i] + h - 1})`;
+      const rows = h === 0 ? 'no rows' : h === 1 ? `row ${starts[i]}` : `rows ${starts[i]}–${starts[i] + h - 1}`;
+      return `band ${i + 1}${name} (${rows})`;
     })
     .join(', ');
 }
@@ -159,8 +172,9 @@ export function updateColor(doc: PatternDoc, id: string, fn: (c: PaletteColor) =
   return { ...doc, palette: doc.palette.map((c) => (c.id === id ? fn(c) : c)) };
 }
 
-export function updateBand(doc: PatternDoc, index: number, patch: Partial<Band>): PatternDoc {
-  return { ...doc, bands: doc.bands.map((b, i) => (i === index ? { ...b, ...patch } : b)) };
+/** Changes fields of band `index`; the patch must suit the kind of band. */
+export function updateBand(doc: PatternDoc, index: number, patch: Partial<MotifBand> | Partial<SpacerBand>): PatternDoc {
+  return { ...doc, bands: doc.bands.map((b, i) => (i === index ? ({ ...b, ...patch } as Band) : b)) };
 }
 
 export function moveItem<T>(items: readonly T[], from: number, to: number): T[] {
@@ -196,7 +210,7 @@ export function renameMotif(doc: PatternDoc, oldId: string, newId: string): Rena
   return {
     doc: {
       ...updateMotif(doc, oldId, (m) => ({ ...m, id: newId })),
-      bands: doc.bands.map((b) => (b.motif === oldId ? { ...b, motif: newId } : b)),
+      bands: doc.bands.map((b) => (!isSpacer(b) && b.motif === oldId ? { ...b, motif: newId } : b)),
     },
   };
 }
@@ -211,7 +225,7 @@ export function renameMapping(doc: PatternDoc, motifId: string, oldId: string, n
   return {
     doc: {
       ...updateMapping(doc, motifId, oldId, (m) => ({ ...m, id: newId })),
-      bands: doc.bands.map((b) => (b.motif === motifId && b.mapping === oldId ? { ...b, mapping: newId } : b)),
+      bands: doc.bands.map((b) => (!isSpacer(b) && b.motif === motifId && b.mapping === oldId ? { ...b, mapping: newId } : b)),
     },
   };
 }
@@ -228,6 +242,7 @@ export function renameColor(doc: PatternDoc, oldId: string, newId: string): Rena
           ? { ...m, mappings: m.mappings.map((p) => ({ ...p, colors: p.colors.map((id) => (id === oldId ? newId : id)) })) }
           : m,
       ),
+      bands: doc.bands.map((b) => (isSpacer(b) && b.color === oldId ? { ...b, color: newId } : b)),
     },
   };
 }
@@ -256,12 +271,22 @@ export function deleteMapping(doc: PatternDoc, motifId: string, id: string): Del
 }
 
 export function deleteColor(doc: PatternDoc, id: string): DeleteResult {
-  const users = mappingsUsingColor(doc, id);
-  if (users.length) {
-    const list = users.map((m) => `“${describeMapping(m)}”`).join(', ');
-    return {
-      blocked: `Colour “${id}” is used by mapping${users.length > 1 ? 's' : ''} ${list}. Remove it from ${users.length > 1 ? 'them' : 'it'} first.`,
-    };
+  const mappings = mappingsUsingColor(doc, id);
+  const spacers = spacersUsingColor(doc, id);
+  if (mappings.length || spacers.length) {
+    const s = (n: number) => (n > 1 ? 's' : '');
+    const users: string[] = [];
+    const fixes: string[] = [];
+    if (mappings.length) {
+      users.push(`mapping${s(mappings.length)} ${mappings.map((m) => `“${describeMapping(m)}”`).join(', ')}`);
+      fixes.push(`remove it from ${spacers.length ? `the mapping${s(mappings.length)}` : mappings.length > 1 ? 'them' : 'it'}`);
+    }
+    if (spacers.length) {
+      users.push(`the spacer${s(spacers.length)} ${describeBands(doc, spacers)}`);
+      fixes.push(`give the spacer${s(spacers.length)} another colour`);
+    }
+    const fix = fixes.join(' and ');
+    return { blocked: `Colour “${id}” is used by ${users.join(' and ')}. ${fix[0].toUpperCase()}${fix.slice(1)} first.` };
   }
   return { doc: { ...doc, palette: doc.palette.filter((c) => c.id !== id) } };
 }
@@ -306,14 +331,6 @@ export function addMapping(doc: PatternDoc, motifId: string, name = ''): { doc: 
 /** A new motif of the given size, with the default mapping. */
 export function blankMotif(doc: PatternDoc, id: string, rows: string[]): Motif {
   return { id, rows, mappings: [defaultMapping(DEFAULT_MAPPING_ID, doc.palette, rows.length)] };
-}
-
-/** Makes sure a 1×1 all-background motif exists and returns its id. */
-export function ensureSpacer(doc: PatternDoc): { doc: PatternDoc; id: string } {
-  const existing = doc.motifs.find((m) => m.rows.length === 1 && m.rows[0] === '0' && m.mappings.length > 0);
-  if (existing) return { doc, id: existing.id };
-  const id = uniqueId(SPACER_ID, doc.motifs.map((m) => m.id));
-  return { doc: { ...doc, motifs: [...doc.motifs, { ...blankMotif(doc, id, ['0']), name: 'Spacer' }] }, id };
 }
 
 /** Today's timestamp in meta.modified. */

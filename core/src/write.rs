@@ -8,7 +8,8 @@
 //! - one motif row and one mapping row per line, a motif's mappings nested
 //!   after its rows;
 //! - whole numbers without a decimal point;
-//! - a band's `times` only when it is not 1; `offset` always.
+//! - a band's `times` only when it is not 1; `offset` always; a spacer's
+//!   `rows` always.
 
 use serde_json::Value;
 
@@ -211,11 +212,21 @@ pub fn write_document(doc: &Document) -> String {
             .iter()
             .map(|band| {
                 let mut f = Fields::new();
-                f.str("motif", &band.motif)
-                    .str("mapping", &band.mapping)
-                    .num("offset", band.offset);
-                if band.times != 1.0 {
-                    f.num("times", band.times);
+                match &band.kind {
+                    BandKind::Motif {
+                        motif,
+                        mapping,
+                        offset,
+                        times,
+                    } => {
+                        f.str("motif", motif).str("mapping", mapping).num("offset", *offset);
+                        if *times != 1.0 {
+                            f.num("times", *times);
+                        }
+                    }
+                    BandKind::Spacer { color, rows } => {
+                        f.str("color", color).num("rows", *rows);
+                    }
                 }
                 f.opt("name", &band.name).extra(&band.extra);
                 f.inline()

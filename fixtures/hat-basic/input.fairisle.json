@@ -27,13 +27,6 @@
         "01"
       ] }
     ] },
-    { "id": "solid", "rows": [
-      "0"
-    ], "mappings": [
-      { "id": "plain", "colors": ["cream", "navy"], "rows": [
-        "01"
-      ] }
-    ] },
     { "id": "flower", "rows": [
       "00010000",
       "00111000",
@@ -52,8 +45,8 @@
   ],
   "bands": [
     { "motif": "peerie-x", "mapping": "sunset", "offset": 0 },
-    { "motif": "solid", "mapping": "plain", "offset": 0 },
+    { "color": "cream", "rows": 1 },
     { "motif": "flower", "mapping": "flower-colors", "offset": 3 },
-    { "motif": "solid", "mapping": "plain", "offset": 0, "times": 2 }
+    { "color": "cream", "rows": 2 }
   ]
 }

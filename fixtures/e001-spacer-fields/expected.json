@@ -1,0 +1,33 @@
+{
+  "description": "A band with both a motif and a color is neither a motif band nor a spacer; spacer fields of the wrong JSON type are E001 too",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "band": 0,
+        "path": "bands[0]"
+      },
+      "detail": "both a motif and a color"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "band": 1,
+        "path": "bands[1].color"
+      },
+      "detail": "bands[1].color must be a string"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "band": 2,
+        "path": "bands[2].rows"
+      },
+      "detail": "bands[2].rows must be a number"
+    }
+  ]
+}
