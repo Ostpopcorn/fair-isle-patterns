@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
-import { store, type Panel, type Screen, type View } from '../state/store';
-import { Badge } from './components/common';
+import { store, type AppState, type Panel, type Screen, type View } from '../state/store';
+import { Badge, tabKeys } from './components/common';
 import { Header } from './Header';
 import { IssuesPanel } from './IssuesPanel';
+import { usePhone } from './layout';
 import { Dialogs } from './dialogs/Dialogs';
 import { BandsPanel } from './panels/BandsPanel';
-import { MotifsPanel } from './panels/MotifsPanel';
-import { PalettePanel } from './panels/PalettePanel';
+import { MotifsPanel, MotifsScreen } from './panels/MotifsPanel';
 import { ProjectPanel } from './panels/ProjectPanel';
 import { ChartView } from './views/ChartView';
 import { GaugeView } from './views/GaugeView';
@@ -15,10 +15,9 @@ import { RoundView } from './views/RoundView';
 import { handleKey } from './shortcuts';
 
 const PANELS: { id: Panel; label: string }[] = [
+  { id: 'project', label: 'Project' },
   { id: 'bands', label: 'Bands' },
   { id: 'motifs', label: 'Motifs' },
-  { id: 'palette', label: 'Palette' },
-  { id: 'project', label: 'Project' },
 ];
 
 const VIEWS: { id: View; label: string; short: string }[] = [
@@ -28,8 +27,13 @@ const VIEWS: { id: View; label: string; short: string }[] = [
   { id: 'round', label: 'In the round', short: 'Round' },
 ];
 
+/** On phones the motif editor is in the Motifs screen instead. */
+const PHONE_VIEWS = VIEWS.filter((v) => v.id !== 'motif');
+
 const SCREENS: { id: Screen; label: string; icon: string }[] = [
-  { id: 'edit', label: 'Edit', icon: '✎' },
+  { id: 'project', label: 'Project', icon: '▤' },
+  { id: 'bands', label: 'Bands', icon: '≡' },
+  { id: 'motifs', label: 'Motifs', icon: '✎' },
   { id: 'view', label: 'View', icon: '▦' },
   { id: 'issues', label: 'Issues', icon: '⚑' },
 ];
@@ -43,16 +47,6 @@ function useAppState() {
     return unsubscribe;
   }, []);
   return store.get();
-}
-
-/** Arrow-key navigation inside a tablist. */
-function tabKeys(e: KeyboardEvent, ids: string[], current: string, select: (id: string) => void) {
-  const i = ids.indexOf(current);
-  const next = e.key === 'ArrowRight' ? ids[(i + 1) % ids.length] : e.key === 'ArrowLeft' ? ids[(i - 1 + ids.length) % ids.length] : null;
-  if (!next) return;
-  e.preventDefault();
-  select(next);
-  requestAnimationFrame(() => (e.currentTarget as HTMLElement).querySelector<HTMLElement>('[aria-selected="true"]')?.focus());
 }
 
 export function App() {
@@ -70,19 +64,7 @@ export function App() {
     document.title = `${s.doc.meta.name || 'Untitled pattern'}${store.isDirty() ? ' •' : ''} — Fair Isle Pattern Builder`;
   });
 
-  const panel = {
-    bands: <BandsPanel s={s} />,
-    motifs: <MotifsPanel s={s} />,
-    palette: <PalettePanel s={s} />,
-    project: <ProjectPanel s={s} />,
-  }[s.ui.panel];
-
-  const view = {
-    motif: <MotifEditor s={s} />,
-    chart: <ChartView s={s} />,
-    gauge: <GaugeView s={s} />,
-    round: <RoundView s={s} />,
-  }[s.ui.view];
+  const phone = usePhone();
 
   return (
     <div class="app">
@@ -95,56 +77,8 @@ export function App() {
       ) : (
         <div />
       )}
-      <div class="workspace" data-screen={s.ui.screen}>
-        <section class="sidebar" aria-label="Work areas">
-          <div class="tabs" role="tablist" aria-label="Work areas" onKeyDown={(e) => tabKeys(e, PANELS.map((p) => p.id), s.ui.panel, (id) => store.ui({ panel: id as Panel }))}>
-            {PANELS.map((p) => (
-              <button
-                key={p.id}
-                role="tab"
-                id={`tab-${p.id}`}
-                aria-selected={s.ui.panel === p.id}
-                aria-controls="work-panel"
-                tabIndex={s.ui.panel === p.id ? 0 : -1}
-                onClick={() => store.ui({ panel: p.id })}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div id="work-panel" role="tabpanel" aria-labelledby={`tab-${s.ui.panel}`} style={{ display: 'contents' }}>
-            {panel}
-          </div>
-        </section>
-        <main class="main">
-          <div class="view-bar">
-            <div class="seg" role="tablist" aria-label="Views" onKeyDown={(e) => tabKeys(e, VIEWS.map((v) => v.id), s.ui.view, (id) => store.ui({ view: id as View }))}>
-              {VIEWS.map((v, i) => (
-                <button key={v.id} role="tab" aria-label={v.label} aria-selected={s.ui.view === v.id} tabIndex={s.ui.view === v.id ? 0 : -1} title={`${v.label} (Alt+${i + 1})`} onClick={() => store.ui({ view: v.id })}>
-                  <span class="long" aria-hidden="true">
-                    {v.label}
-                  </span>
-                  <span class="short" aria-hidden="true">
-                    {v.short}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <span class="spacer" />
-            {s.ui.issue && (
-              <button class="btn small" onClick={() => store.ui({ issue: null })}>
-                Clear highlight
-              </button>
-            )}
-            <span class="small muted">{s.ui.grayscale ? 'Grayscale' : ''}</span>
-          </div>
-          <div class="view-body" role="region" aria-label={VIEWS.find((v) => v.id === s.ui.view)?.label}>
-            {view}
-          </div>
-        </main>
-        <IssuesPanel s={s} />
-      </div>
-      <MobileNav screen={s.ui.screen} />
+      {phone ? <PhoneScreen s={s} /> : <Workspace s={s} />}
+      {phone && <MobileNav screen={s.ui.screen} />}
       <Dialogs s={s} />
       {s.ui.toast && (
         <div class="toast" role="status">
@@ -155,6 +89,109 @@ export function App() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Wider layouts: the work areas, the view and the issues side by side. */
+function Workspace({ s }: { s: AppState }) {
+  const panel = {
+    project: <ProjectPanel s={s} />,
+    bands: <BandsPanel s={s} />,
+    motifs: <MotifsPanel s={s} />,
+  }[s.ui.panel];
+
+  return (
+    <div class="workspace">
+      <section class="sidebar" aria-label="Work areas">
+        <div class="tabs" role="tablist" aria-label="Work areas" onKeyDown={(e) => tabKeys(e, PANELS.map((p) => p.id), s.ui.panel, (id) => store.ui({ panel: id as Panel }))}>
+          {PANELS.map((p) => (
+            <button
+              key={p.id}
+              role="tab"
+              id={`tab-${p.id}`}
+              aria-selected={s.ui.panel === p.id}
+              aria-controls="work-panel"
+              tabIndex={s.ui.panel === p.id ? 0 : -1}
+              onClick={() => store.ui({ panel: p.id })}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div id="work-panel" role="tabpanel" aria-labelledby={`tab-${s.ui.panel}`} style={{ display: 'contents' }}>
+          {panel}
+        </div>
+      </section>
+      <ViewArea s={s} views={VIEWS} current={s.ui.view} />
+      <IssuesPanel s={s} />
+    </div>
+  );
+}
+
+/** Phones: the screen picked in the bottom bar. */
+function PhoneScreen({ s }: { s: AppState }) {
+  const screen = {
+    project: (
+      <section class="sidebar" aria-label="Project">
+        <ProjectPanel s={s} />
+      </section>
+    ),
+    bands: (
+      <section class="sidebar" aria-label="Bands">
+        <BandsPanel s={s} />
+      </section>
+    ),
+    motifs: <MotifsScreen s={s} />,
+    view: <ViewArea s={s} views={PHONE_VIEWS} current={s.ui.view === 'motif' ? 'chart' : s.ui.view} />,
+    issues: <IssuesPanel s={s} />,
+  }[s.ui.screen];
+  return <div class="workspace">{screen}</div>;
+}
+
+/** A view picked from `views`, with the switch above it. */
+function ViewArea({ s, views, current }: { s: AppState; views: typeof VIEWS; current: View }) {
+  const view = {
+    motif: <MotifEditor s={s} />,
+    chart: <ChartView s={s} />,
+    gauge: <GaugeView s={s} />,
+    round: <RoundView s={s} />,
+  }[current];
+
+  return (
+    <main class="main">
+      <div class="view-bar">
+        <div class="seg" role="tablist" aria-label="Views" onKeyDown={(e) => tabKeys(e, views.map((v) => v.id), current, (id) => store.ui({ view: id as View }))}>
+          {views.map((v) => (
+            <button
+              key={v.id}
+              role="tab"
+              aria-label={v.label}
+              aria-selected={current === v.id}
+              tabIndex={current === v.id ? 0 : -1}
+              title={`${v.label} (Alt+${VIEWS.indexOf(v) + 1})`}
+              onClick={() => store.ui({ view: v.id })}
+            >
+              <span class="long" aria-hidden="true">
+                {v.label}
+              </span>
+              <span class="short" aria-hidden="true">
+                {v.short}
+              </span>
+            </button>
+          ))}
+        </div>
+        <span class="spacer" />
+        {s.ui.issue && (
+          <button class="btn small" onClick={() => store.ui({ issue: null })}>
+            Clear highlight
+          </button>
+        )}
+        <span class="small muted">{s.ui.grayscale ? 'Grayscale' : ''}</span>
+      </div>
+      <div class="view-body" role="region" aria-label={VIEWS.find((v) => v.id === current)?.label}>
+        {view}
+      </div>
+    </main>
   );
 }
 

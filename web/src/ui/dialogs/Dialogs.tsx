@@ -157,7 +157,7 @@ function HelpDialog() {
           <h3>How it works</h3>
           <ul class="small">
             <li>
-              <strong>Palette</strong>: the yarns the project uses.
+              <strong>Palette</strong>: the yarns the project uses, in the Project tab.
             </li>
             <li>
               <strong>Motifs</strong>: shapes of background, foreground and accent cells. The motif editor shows them in black and white unless you pick

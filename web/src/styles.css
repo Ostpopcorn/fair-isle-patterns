@@ -453,6 +453,13 @@ label.check {
   flex: 1;
 }
 
+/* A titled group inside a panel, such as the palette in Project. */
+.section {
+  display: grid;
+  gap: 8px;
+  scroll-margin-top: 12px;
+}
+
 .main {
   display: flex;
   flex-direction: column;
@@ -1098,29 +1105,43 @@ kbd {
     display: none;
   }
 
+  /* The app renders only the screen picked in the bottom bar. */
   .workspace {
     display: block;
     min-height: 0;
   }
 
-  .workspace > .sidebar,
-  .workspace > .main,
-  .workspace > .issues {
-    display: none;
+  .workspace > * {
     height: 100%;
     max-height: none;
     border: 0;
   }
 
-  .workspace[data-screen='edit'] > .sidebar,
-  .workspace[data-screen='view'] > .main,
-  .workspace[data-screen='issues'] > .issues {
-    display: flex;
+  /* Motifs: picker and pages on top, the editor or the mappings below. */
+  .motifs-screen > .view-body {
+    background: var(--bg);
+  }
+
+  .motif-picker {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .motifs-screen > .new-motif {
+    flex: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* New, Open…, Save / Save as…, Export…, Library… at the top of Project. */
+  .file-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
   }
 
   .mobile-nav {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     border-top: 1px solid var(--border);
     background: var(--surface);
     padding-bottom: env(safe-area-inset-bottom);

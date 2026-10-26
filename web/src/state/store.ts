@@ -6,11 +6,16 @@ import { compile, layout, serialize, validate } from '../core';
 import type { Rect, Symbol } from '../model/motif';
 import { newPattern } from '../model/doc';
 
-export type Panel = 'bands' | 'motifs' | 'palette' | 'project';
+/** The work areas in the sidebar of wider layouts. */
+export type Panel = 'project' | 'bands' | 'motifs';
 export type View = 'motif' | 'chart' | 'gauge' | 'round';
 export type Tool = 'pencil' | 'fill' | 'line' | 'rect' | 'select';
-/** On phones one screen is shown at a time; wider layouts show all three. */
-export type Screen = 'edit' | 'view' | 'issues';
+/** On phones one screen is shown at a time, picked from the bottom bar;
+ * wider layouts show a work area, a view and the issues side by side. */
+export type Screen = 'project' | 'bands' | 'motifs' | 'view' | 'issues';
+/** The page of the phone's Motifs screen: the motif editor, or the motif's
+ * colour mappings and details. */
+export type MotifPage = 'draw' | 'colours';
 
 export type Dialog =
   | { kind: 'welcome' }
@@ -43,6 +48,7 @@ export interface UiState {
   dialog: Dialog | null;
   toast: string | null;
   screen: Screen;
+  motifPage: MotifPage;
 }
 
 export interface FileRef {
@@ -94,7 +100,8 @@ export const initialUi: UiState = {
   grayscale: false,
   dialog: null,
   toast: null,
-  screen: 'edit',
+  screen: 'bands',
+  motifPage: 'draw',
 };
 
 export class Store {

@@ -7,7 +7,8 @@ import { store, type AppState } from '../../state/store';
 import { Swatch } from '../components/common';
 import { IdField } from '../components/IdField';
 
-export function PalettePanel({ s }: { s: AppState }) {
+/** The palette, a section of the Project tab. */
+export function PaletteSection({ s }: { s: AppState }) {
   const doc = s.doc;
   const [open, setOpen] = useState<string | null>(null);
 
@@ -18,9 +19,9 @@ export function PalettePanel({ s }: { s: AppState }) {
   };
 
   return (
-    <div class="panel">
+    <section id="palette" class="section" aria-labelledby="palette-heading">
       <div class="row">
-        <h2>Palette</h2>
+        <h3 id="palette-heading">Palette</h3>
         <span class="spacer" />
         <button class="btn small primary" onClick={add} disabled={s.readOnly}>
           + Colour
@@ -35,10 +36,12 @@ export function PalettePanel({ s }: { s: AppState }) {
       {doc.palette.map((c) => (
         <ColorRow key={c.id} s={s} color={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onRenamed={setOpen} />
       ))}
-      <button class="btn small" onClick={() => store.ui({ dialog: { kind: 'library', source: null } })}>
-        Browse the starter library…
-      </button>
-    </div>
+      <div>
+        <button class="btn small" onClick={() => store.ui({ dialog: { kind: 'library', source: null } })}>
+          Browse the starter library…
+        </button>
+      </div>
+    </section>
   );
 }
 

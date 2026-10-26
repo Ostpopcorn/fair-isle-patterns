@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { newPatternAction, openFileAction, save, saveAs } from '../state/actions';
 import { store, type AppState } from '../state/store';
 
-interface Action {
+export interface Action {
   label: string;
   title: string;
   run: () => void;
@@ -10,11 +10,10 @@ interface Action {
   pressed?: boolean;
 }
 
-export function Header({ s }: { s: AppState }) {
-  const dirty = store.isDirty();
-  const fileName = s.file?.name;
-  const unsaved = !s.readOnly && (dirty || !fileName);
-  const actions: Action[] = [
+/** New, Open, Save, Save as, Export and Library: in the header of wider
+ * layouts, and in the menu and the Project screen on phones. */
+export function fileActions(s: AppState): Action[] {
+  return [
     { label: 'New', title: 'New pattern (Alt+N)', run: newPatternAction },
     { label: 'Open…', title: 'Open a pattern file (Ctrl+O)', run: () => void openFileAction() },
     { label: 'Save', title: 'Save (Ctrl+S)', run: () => void save(), disabled: s.readOnly },
@@ -26,6 +25,13 @@ export function Header({ s }: { s: AppState }) {
       run: () => store.ui({ dialog: { kind: 'library', source: null } }),
     },
   ];
+}
+
+export function Header({ s }: { s: AppState }) {
+  const dirty = store.isDirty();
+  const fileName = s.file?.name;
+  const unsaved = !s.readOnly && (dirty || !fileName);
+  const actions = fileActions(s);
   const grayscale: Action = {
     label: '◐ Grayscale',
     title: 'Show every colour as its lightness (G)',

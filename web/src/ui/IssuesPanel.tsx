@@ -3,6 +3,7 @@ import type { Issue, Severity } from '../core/types';
 import { suggestCastOn } from '../core';
 import { store, type AppState } from '../state/store';
 import { Badge } from './components/common';
+import { showPalette } from './navigate';
 
 const GROUPS: { severity: Severity; title: string }[] = [
   { severity: 'error', title: 'Errors' },
@@ -29,17 +30,18 @@ function reveal(issue: Issue, s: AppState): void {
     store.ui({ issue, view: 'chart', bandIndex: l.band ?? s.ui.bandIndex, screen: 'view' });
   } else if (l.motif && l.mapping && l.band === undefined) {
     // A problem inside one of a motif's mappings.
-    store.ui({ issue, panel: 'motifs', motifId: l.motif, mappingId: l.mapping, screen: 'edit' });
+    store.ui({ issue, panel: 'motifs', motifId: l.motif, mappingId: l.mapping, screen: 'motifs', motifPage: 'colours' });
   } else if (l.motif && (issue.code === 'E004' || issue.code === 'E005' || issue.code === 'E008')) {
-    store.ui({ issue, panel: 'motifs', motifId: l.motif, view: 'motif', screen: 'view' });
+    store.ui({ issue, panel: 'motifs', motifId: l.motif, view: 'motif', screen: 'motifs', motifPage: 'draw' });
   } else if (l.band !== undefined) {
-    store.ui({ issue, panel: 'bands', bandIndex: l.band, screen: 'edit' });
+    store.ui({ issue, panel: 'bands', bandIndex: l.band, screen: 'bands' });
   } else if (l.color || l.path?.startsWith('palette')) {
-    store.ui({ issue, panel: 'palette', screen: 'edit' });
+    store.ui({ issue });
+    showPalette();
   } else if (l.path?.startsWith('gauge') || l.path?.startsWith('cast_on') || l.path?.startsWith('settings')) {
-    store.ui({ issue, panel: 'project', screen: 'edit' });
+    store.ui({ issue, panel: 'project', screen: 'project' });
   } else if (l.motif) {
-    store.ui({ issue, panel: 'motifs', motifId: l.motif, screen: 'edit' });
+    store.ui({ issue, panel: 'motifs', motifId: l.motif, screen: 'motifs', motifPage: 'colours' });
   } else {
     store.ui({ issue });
   }

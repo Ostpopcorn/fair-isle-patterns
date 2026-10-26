@@ -38,7 +38,8 @@ themselves, version their work and like to tinker.
 - A CC0 starter library: peeries, OXO bands and stars, each with
   two-colour, light-on-dark and shaded mappings, and a neutral palette.
 - Keyboard shortcuts for everything (press `?`), light and dark themes,
-  installable offline PWA.
+  installable offline PWA. On a phone the app has five screens (Project,
+  Bands, Motifs, View and Issues), picked from a bar at the bottom.
 
 See the [user guide](docs/user-guide.md) and the
 [file format reference](docs/format.md).

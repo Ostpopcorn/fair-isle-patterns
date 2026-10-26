@@ -30,7 +30,7 @@ export function MotifEditor({ s }: { s: AppState }) {
   if (!motif) {
     return (
       <div class="panel">
-        <div class="empty">Pick a motif in the Motifs tab, or create one, to edit it here.</div>
+        <div class="empty">No motif selected. Pick one in the Motifs tab, or create one with + Motif, to draw it here.</div>
       </div>
     );
   }

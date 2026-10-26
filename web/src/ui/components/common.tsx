@@ -317,3 +317,15 @@ export function Badge(props: { severity: 'error' | 'warning' | 'notice'; count: 
     </span>
   );
 }
+
+/** Arrow-key navigation inside a tablist. */
+export function tabKeys(e: KeyboardEvent, ids: string[], current: string, select: (id: string) => void) {
+  const i = ids.indexOf(current);
+  const next = e.key === 'ArrowRight' ? ids[(i + 1) % ids.length] : e.key === 'ArrowLeft' ? ids[(i - 1 + ids.length) % ids.length] : null;
+  if (!next) return;
+  e.preventDefault();
+  // currentTarget is cleared once the event has been handled.
+  const list = e.currentTarget as HTMLElement;
+  select(next);
+  requestAnimationFrame(() => list.querySelector<HTMLElement>('[aria-selected="true"]')?.focus());
+}

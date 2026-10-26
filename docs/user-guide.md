@@ -36,7 +36,22 @@ A new pattern starts with three colours, a small peerie motif with one
 mapping, and a two-row spacer below and above it, so there is a chart to
 look at straight away.
 
-## The work areas (left)
+## The work areas
+
+On a computer the work areas are the tabs on the left: Project, Bands and
+Motifs. The view (motif editor, chart, gauge preview or in the round) is in
+the middle and the issues are on the right. On a phone each has a screen of
+its own; see [On a phone](#on-a-phone).
+
+**Project.** Name, author, licence and description; the palette; the gauge
+(stitches and rows per 10 cm) and the cast-on, which is the chart width.
+*Pattern settings…* sets the thresholds for the checks.
+
+The **palette** is the list of yarns. Pick colours with the colour picker or
+type a hex value. Add a name and the yarn (shade and number) so you can buy
+it again. *Import…* copies colours from a library file. A colour listed by a
+mapping or used by a spacer cannot be deleted; the message lists them.
+Changing a colour's id updates the mappings and spacers that use it.
 
 **Bands.** The stack, top band first, as on the chart. Each card shows the
 band's rows and its issues.
@@ -82,16 +97,6 @@ Below the motif are its **colour mappings**. Pick one to edit it:
 
 Mapping ids only need to be unique within their motif, so two motifs can
 each have a mapping called `default`.
-
-**Palette.** Pick colours with the colour picker or type a hex value. Add a
-name and the yarn (shade and number) so you can buy it again. *Import…*
-copies colours from a library file. A colour listed by a mapping or used by
-a spacer cannot be deleted; the message lists them. Changing a colour's id
-updates the mappings and spacers that use it.
-
-**Project.** Name, author, licence and description; the gauge (stitches and
-rows per 10 cm) and the cast-on, which is the chart width. *Pattern
-settings…* sets the thresholds for the checks.
 
 ## The motif editor
 
@@ -202,19 +207,25 @@ Exports work offline and follow the grayscale toggle.
 
 ## On a phone
 
-On narrow screens the app shows one screen at a time, switched from the bar
+On narrow screens the app shows one screen at a time, picked from the bar
 at the bottom:
 
-- **Edit**: the work areas (bands, motifs and their mappings, palette,
-  project).
-- **View**: the motif editor, chart, gauge preview and in-the-round view.
-  *Edit motif* opens a motif here.
-- **Issues**: everything the checks found. Tapping an issue shows it on the
-  chart or opens the work area that fixes it.
+- **Project**: the file buttons (New, Open, Save, Save as, Export and
+  Library), the pattern's details, the palette, the gauge and the checks.
+- **Bands**: the band stack.
+- **Motifs**: a motif picker and *+ Motif* at the top, then two pages.
+  *Draw* is the motif editor. *Colours* has the motif's colour mappings and,
+  below them, its name, id, *Duplicate* and *Delete*. Picking another motif
+  keeps the page you are on. A band's *Motif* button opens Draw and its
+  *Colours* button opens Colours at the band's mapping.
+- **View**: the chart, gauge preview and in-the-round view.
+- **Issues**: everything the checks found, with the number of errors and
+  warnings on the tab. Tapping an issue shows it on the chart or opens the
+  screen that fixes it.
 
-The file actions, grayscale and help are in the ⋯ menu. In the views, drag
-to pan (or to turn the tube), pinch to zoom, or use the − / Fit / + buttons.
-The motif editor keeps the less common tools behind *More tools*.
+The ⋯ menu has the file actions too, with grayscale and help. In the views,
+drag to pan (or to turn the tube), pinch to zoom, or use the − / Fit / +
+buttons. The motif editor keeps the less common tools behind *More tools*.
 
 ## Keyboard
 

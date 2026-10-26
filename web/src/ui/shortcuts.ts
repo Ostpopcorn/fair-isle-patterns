@@ -3,6 +3,7 @@
 
 import { importLibraryFile, newPatternAction, openFileAction, save, saveAs } from '../state/actions';
 import { store, type Tool, type View } from '../state/store';
+import { motifEditorShown } from './layout';
 import { motifCommands } from './views/motifCommands';
 
 export interface Shortcut {
@@ -19,7 +20,8 @@ const mod = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
 const plain = (e: KeyboardEvent, key: string) => !mod(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === key;
 
 const tool = (t: Tool) => () => store.ui({ tool: t, selection: t === 'select' ? store.get().ui.selection : null });
-const view = (v: View) => () => store.ui({ view: v, screen: 'view' });
+// On phones the motif editor is the Motifs screen's Draw page.
+const view = (v: View) => () => store.ui(v === 'motif' ? { view: v, screen: 'motifs', motifPage: 'draw' } : { view: v, screen: 'view' });
 
 export const SHORTCUTS: Shortcut[] = [
   { group: 'File', keys: 'Ctrl+S', description: 'Save', match: (e) => mod(e) && !e.shiftKey && e.key.toLowerCase() === 's', run: () => void save() },
@@ -89,7 +91,7 @@ export function handleKey(e: KeyboardEvent): void {
   }
   if (typing && !global) return;
 
-  const inMotif = s.ui.view === 'motif';
+  const inMotif = motifEditorShown(s.ui);
   if (e.altKey && /^Digit[1-4]$/.test(e.code)) {
     e.preventDefault();
     view(VIEWS[Number(e.code.slice(5)) - 1])();

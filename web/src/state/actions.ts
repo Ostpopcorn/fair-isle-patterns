@@ -79,7 +79,7 @@ export async function openFileAction(): Promise<void> {
 
 export function newPatternAction(): void {
   store.load(newPattern(loadPrefs().settings));
-  store.ui({ panel: 'bands', view: 'chart' });
+  store.ui({ panel: 'bands', view: 'chart', screen: 'bands' });
   saveNow(store);
 }
 

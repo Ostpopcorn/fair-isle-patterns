@@ -2,6 +2,8 @@ import type { Gauge, Meta } from '../../core/types';
 import { withOptional } from '../../model/doc';
 import { store, type AppState } from '../../state/store';
 import { NumberField } from '../components/common';
+import { fileActions } from '../Header';
+import { PaletteSection } from './PaletteSection';
 
 export function ProjectPanel({ s }: { s: AppState }) {
   const doc = s.doc;
@@ -16,6 +18,15 @@ export function ProjectPanel({ s }: { s: AppState }) {
   return (
     <div class="panel">
       <h2>Project</h2>
+      <div class="only-mobile">
+        <div class="file-actions" role="group" aria-label="File">
+          {fileActions(s).map((a) => (
+            <button key={a.label} class="btn small" onClick={a.run} disabled={a.disabled} title={a.title}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <label class="field">
         <span>Pattern name</span>
         <input type="text" value={doc.meta.name} onInput={(e) => setMeta('name', (e.currentTarget as HTMLInputElement).value)} />
@@ -39,6 +50,9 @@ export function ProjectPanel({ s }: { s: AppState }) {
         <span>Description</span>
         <textarea value={doc.meta.description ?? ''} onInput={(e) => setMeta('description', (e.currentTarget as HTMLTextAreaElement).value)} />
       </label>
+
+      <div class="divider" />
+      <PaletteSection s={s} />
 
       <div class="divider" />
       <h3>Gauge</h3>
