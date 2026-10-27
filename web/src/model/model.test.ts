@@ -3,7 +3,7 @@ import { compile, parse, validate } from '../core';
 import type { LibraryDoc, Mapping, PatternDoc } from '../core/types';
 import { fixtureText, loadCore } from '../core/testing';
 import { builtinLibraries } from '../library';
-import { grayForLightness, lightness, parseHex } from './color';
+import { grayForLightness, hslToRgb, lightness, parseHex, rgbToHsl, toHex, type RGB } from './color';
 import * as D from './doc';
 import { importFromLibrary } from './library';
 import * as Map from './mapping';
@@ -344,5 +344,25 @@ describe('colour', () => {
     expect(lightness(parseHex('#efe6d2')!)).toBeCloseTo(91.5, 0);
     for (const l of [0, 10, 50, 91.5, 100]) expect(lightness(grayForLightness(l))).toBeCloseTo(l, 0);
     expect(parseHex('#12345')).toBeNull();
+  });
+
+  it('HSL', () => {
+    const hsl = (hex: string) => rgbToHsl(parseHex(hex)!).map((v) => Math.round(v));
+    expect(hsl('#ff0000')).toEqual([0, 100, 50]);
+    expect(hsl('#00ff00')).toEqual([120, 100, 50]);
+    expect(hsl('#0000ff')).toEqual([240, 100, 50]);
+    expect(hsl('#ff00ff')).toEqual([300, 100, 50]);
+    expect(hsl('#1f2a44')).toEqual([222, 37, 19]);
+    expect(hsl('#808080')).toEqual([0, 0, 50]);
+    expect(toHex(hslToRgb([120, 100, 25]))).toBe('#008000');
+    expect(toHex(hslToRgb([-60, 100, 50]))).toBe('#ff00ff');
+    expect(toHex(hslToRgb([0, 150, 120]))).toBe('#ffffff');
+    // Every colour survives the trip through HSL.
+    for (let r = 0; r < 256; r += 15)
+      for (let g = 0; g < 256; g += 15)
+        for (let b = 0; b < 256; b += 15) {
+          const rgb: RGB = [r, g, b];
+          expect(hslToRgb(rgbToHsl(rgb))).toEqual(rgb);
+        }
   });
 });

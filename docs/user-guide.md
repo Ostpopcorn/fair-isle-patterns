@@ -47,11 +47,24 @@ its own; see [On a phone](#on-a-phone).
 (stitches and rows per 10 cm) and the cast-on, which is the chart width.
 *Pattern settings…* sets the thresholds for the checks.
 
-The **palette** is the list of yarns. Pick colours with the colour picker or
-type a hex value. Add a name and the yarn (shade and number) so you can buy
-it again. *Import…* copies colours from a library file. A colour listed by a
-mapping or used by a spacer cannot be deleted; the message lists them.
-Changing a colour's id updates the mappings and spacers that use it.
+The **palette** is the list of yarns. Type a hex value, or tap a colour's
+swatch to open its colour picker:
+
+- The **wheel** picks hue (around) and saturation (out from the centre). It
+  shows the colours at the current lightness, so what is under your finger
+  is what you get.
+- The **lightness** slider runs from black through the colour to white.
+- **Presets** are the yarn shades of the starter library's neutral palette.
+- **R, G, B** (0–255) and **H** (0–360°), **S** and **L** (0–100 %) can be
+  typed. A gray keeps its hue, so raising the saturation again brings the
+  hue back.
+- *Lightness L\** is the lightness the contrast check compares.
+
+Every drag, preset or typed value is one undo step. Add a name and the yarn
+(shade and number) so you can buy it again. *Import…* copies colours from a
+library file. A colour listed by a mapping or used by a spacer cannot be
+deleted; the message lists them. Changing a colour's id updates the mappings
+and spacers that use it.
 
 **Bands.** The stack, top band first, as on the chart. Each card shows the
 band's rows and its issues.

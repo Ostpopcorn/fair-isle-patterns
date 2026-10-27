@@ -2,20 +2,31 @@ import { useEffect, useState } from 'preact/hooks';
 import type { PaletteColor } from '../../core/types';
 import { parseHex } from '../../model/color';
 import { deleteColor, describeBands, describeMapping, mappingsUsingColor, renameColor, slugify, spacersUsingColor, uniqueId, updateColor, withOptional } from '../../model/doc';
+import { builtinLibraries } from '../../library';
 import { importLibraryFile } from '../../state/actions';
 import { store, type AppState } from '../../state/store';
+import { ColorPicker, type Preset } from '../components/ColorPicker';
 import { Swatch } from '../components/common';
 import { IdField } from '../components/IdField';
+
+/** The picker's presets: the starter library's neutral palette of yarn
+ * colours. */
+function presets(): Preset[] {
+  const neutral = builtinLibraries().find((l) => l.file.startsWith('neutral'));
+  return neutral?.doc.palette.map((c) => ({ hex: c.hex, name: c.name ?? c.id })) ?? [];
+}
 
 /** The palette, a section of the Project tab. */
 export function PaletteSection({ s }: { s: AppState }) {
   const doc = s.doc;
   const [open, setOpen] = useState<string | null>(null);
+  const [picking, setPicking] = useState<string | null>(null);
 
   const add = () => {
     const id = uniqueId('colour', doc.palette.map((c) => c.id));
     store.edit((d) => ({ ...d, palette: [...d.palette, { id, hex: '#7f7f7f' }] }));
     setOpen(id);
+    setPicking(id);
   };
 
   return (
@@ -34,7 +45,19 @@ export function PaletteSection({ s }: { s: AppState }) {
         The actual yarns. Record the shade name and number to find them again.
       </p>
       {doc.palette.map((c) => (
-        <ColorRow key={c.id} s={s} color={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onRenamed={setOpen} />
+        <ColorRow
+          key={c.id}
+          s={s}
+          color={c}
+          open={open === c.id}
+          onToggle={() => setOpen(open === c.id ? null : c.id)}
+          picking={picking === c.id}
+          onTogglePicker={() => setPicking(picking === c.id ? null : c.id)}
+          onRenamed={(id) => {
+            setOpen(id);
+            setPicking((p) => (p === c.id ? id : p));
+          }}
+        />
       ))}
       <div>
         <button class="btn small" onClick={() => store.ui({ dialog: { kind: 'library', source: null } })}>
@@ -45,7 +68,15 @@ export function PaletteSection({ s }: { s: AppState }) {
   );
 }
 
-function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onToggle: () => void; onRenamed: (id: string) => void }) {
+function ColorRow(props: {
+  s: AppState;
+  color: PaletteColor;
+  open: boolean;
+  onToggle: () => void;
+  picking: boolean;
+  onTogglePicker: () => void;
+  onRenamed: (id: string) => void;
+}) {
   const { color, s } = props;
   const [hexText, setHexText] = useState(color.hex);
   useEffect(() => setHexText(color.hex), [color.hex]);
@@ -60,7 +91,14 @@ function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onTo
   return (
     <div class="card" style={{ gap: '6px', padding: '8px' }}>
       <div class="palette-row">
-        <input type="color" aria-label={`${color.id} colour`} value={parseHex(color.hex) ? color.hex.toLowerCase() : '#000000'} onInput={(e) => setHex((e.currentTarget as HTMLInputElement).value)} />
+        <button
+          class="swatch-button"
+          style={{ background: parseHex(color.hex) ? color.hex : 'transparent' }}
+          aria-label={`Pick the colour of ${color.id}`}
+          title="Pick the colour"
+          aria-expanded={props.picking}
+          onClick={props.onTogglePicker}
+        />
         <input
           type="text"
           class="mono"
@@ -94,6 +132,16 @@ function ColorRow(props: { s: AppState; color: PaletteColor; open: boolean; onTo
           ✕
         </button>
       </div>
+      {props.picking && (
+        <ColorPicker
+          value={color.hex}
+          onChange={setHex}
+          onCommit={() => store.breakCoalescing()}
+          onClose={props.onTogglePicker}
+          presets={presets()}
+          label={`Colour of ${color.name ?? color.id}`}
+        />
+      )}
       {props.open && (
         <div class="palette-extra">
           <label class="field">

@@ -190,14 +190,19 @@ input[type='number'] {
   font-variant-numeric: tabular-nums;
 }
 
-input[type='color'] {
+/* A palette colour's swatch; opens its colour picker. */
+.swatch-button {
   width: 34px;
   height: 30px;
-  padding: 2px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--surface);
   cursor: pointer;
+}
+
+.swatch-button[aria-expanded='true'] {
+  border-color: var(--accent);
 }
 
 textarea {
@@ -677,6 +682,100 @@ select[aria-invalid='true'] {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding-left: 40px;
+}
+
+/* ---------- colour picker ---------- */
+
+.color-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.color-picker .wide {
+  grid-column: 1 / -1;
+}
+
+.wheel {
+  position: relative;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.wheel canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel-marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.color-picker-side {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: repeat(4, 24px);
+  gap: 5px;
+}
+
+.preset {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.preset[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+input.lightness {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+input.lightness::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+}
+
+input.lightness::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
 }
 
 /* ---------- motif editor ---------- */

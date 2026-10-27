@@ -25,7 +25,8 @@ themselves, version their work and like to tinker.
   between motifs; shown in black and white or in any of the motif's
   mappings, with a live tiled preview.
 - Mapping editor under each motif, with reverse and shift helpers; palette
-  with yarn names;
+  with yarn names and a colour picker (wheel, lightness, yarn presets, RGB
+  and HSL);
   band stack with offsets, vertical repeats, one-colour spacers and
   keyboard reordering.
 - Issues panel grouped by severity, with highlighting of every offending
