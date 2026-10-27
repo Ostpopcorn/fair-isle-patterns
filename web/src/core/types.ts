@@ -70,6 +70,10 @@ export interface MotifBand {
   mapping: string;
   offset: number;
   times: number;
+  /** Mirror the motif left to right. */
+  flip_horizontal: boolean;
+  /** Turn the motif upside down, with its mapping's colours. */
+  flip_vertical: boolean;
   name?: string;
   [unknown: string]: unknown;
 }
@@ -200,5 +204,5 @@ export const PATTERN_KEYS = [
 ] as const;
 export const MOTIF_KEYS = ['id', 'name', 'rows', 'mappings'] as const;
 export const MAPPING_KEYS = ['id', 'name', 'colors', 'rows'] as const;
-export const BAND_KEYS = ['motif', 'mapping', 'offset', 'times', 'name'] as const;
+export const BAND_KEYS = ['motif', 'mapping', 'offset', 'times', 'flip_horizontal', 'flip_vertical', 'name'] as const;
 export const SPACER_KEYS = ['color', 'rows', 'name'] as const;

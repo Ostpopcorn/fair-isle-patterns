@@ -1,0 +1,24 @@
+{
+  "description": "flip_horizontal and flip_vertical must be true or false",
+  "parse_ok": false,
+  "issues": [
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "band": 0,
+        "path": "bands[0].flip_horizontal"
+      },
+      "detail": "bands[0].flip_horizontal must be true or false"
+    },
+    {
+      "code": "E001",
+      "severity": "error",
+      "location": {
+        "band": 1,
+        "path": "bands[1].flip_vertical"
+      },
+      "detail": "bands[1].flip_vertical must be true or false"
+    }
+  ]
+}

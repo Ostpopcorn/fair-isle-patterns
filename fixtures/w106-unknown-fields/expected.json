@@ -1,5 +1,5 @@
 {
-  "description": "Unknown fields are reported as W106 notices and written back on save, after the known fields and sorted by key. times is not a spacer field",
+  "description": "Unknown fields are reported as W106 notices and written back on save, after the known fields and sorted by key. times and the flips are not spacer fields",
   "roundtrip": true,
   "issues": [
     {
@@ -29,6 +29,15 @@
         "path": "bands[0].comment"
       },
       "detail": "bands[0].comment"
+    },
+    {
+      "code": "W106",
+      "severity": "notice",
+      "location": {
+        "band": 1,
+        "path": "bands[1].flip_vertical"
+      },
+      "detail": "bands[1].flip_vertical"
     },
     {
       "code": "W106",

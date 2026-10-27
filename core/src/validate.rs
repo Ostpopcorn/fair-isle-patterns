@@ -542,11 +542,13 @@ impl Checker<'_> {
                 ..Location::default()
             };
             match &band.kind {
+                // Flips are always valid once read.
                 BandKind::Motif {
                     motif,
                     mapping,
                     offset,
                     times,
+                    ..
                 } => {
                     let m = self.r.motif(motif);
                     if m.is_none() {

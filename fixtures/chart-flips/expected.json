@@ -1,0 +1,37 @@
+{
+  "description": "flip_horizontal mirrors the motif left to right and the offset then slides the mirrored motif; flip_vertical turns the motif upside down and its mapping's colours with it, in every repeat",
+  "roundtrip": true,
+  "issues": [],
+  "chart": {
+    "letters": {
+      "a": "a",
+      "b": "b",
+      "c": "c",
+      "d": "d"
+    },
+    "rows": [
+      "baaa",
+      "ccaa",
+      "aada",
+      "baaa",
+      "ccaa",
+      "aada",
+      "daaa",
+      "acca",
+      "aaba",
+      "aaab",
+      "aacc",
+      "adaa",
+      "baaa",
+      "ccaa",
+      "aada",
+      "adaa",
+      "aacc",
+      "aaab",
+      "aada",
+      "ccaa",
+      "baaa"
+    ]
+  },
+  "suggest_cast_on": []
+}

@@ -60,7 +60,7 @@ export function newPattern(settings: Settings = DEFAULT_SETTINGS, now = new Date
     settings: { ...settings },
     palette,
     motifs: [{ id: 'peerie-x', name: 'Peerie X', rows: ['100001', '010010', '001100', '010010', '100001'], mappings: [defaultMapping(DEFAULT_MAPPING_ID, palette, 5)] }],
-    bands: [newSpacer('cream', 2), { motif: 'peerie-x', mapping: DEFAULT_MAPPING_ID, offset: 0, times: 1 }, newSpacer('cream', 2)],
+    bands: [newSpacer('cream', 2), newMotifBand('peerie-x', DEFAULT_MAPPING_ID), newSpacer('cream', 2)],
   };
 }
 
@@ -73,6 +73,11 @@ export function isSpacer(band: Band): band is SpacerBand {
 
 export function newSpacer(color: string, rows = 1): SpacerBand {
   return { color, rows };
+}
+
+/** A motif band as drawn: no offset, one repeat, not flipped. */
+export function newMotifBand(motif: string, mapping: string): MotifBand {
+  return { motif, mapping, offset: 0, times: 1, flip_horizontal: false, flip_vertical: false };
 }
 
 // ---- references ----

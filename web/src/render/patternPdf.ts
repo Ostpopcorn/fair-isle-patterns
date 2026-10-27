@@ -117,7 +117,7 @@ export function patternPdf(doc: PatternDoc, chart: CompiledChart, options: PdfOp
         if (y > paper.height - MARGIN - 20) return;
         const what = isSpacer(b)
           ? `${b.name ?? 'Spacer'} (spacer in ${colorName(doc, b.color)})`
-          : `${b.name ?? findMotif(doc, b.motif)?.name ?? b.motif} (motif ${b.motif}, mapping ${b.mapping}${b.offset ? `, offset ${b.offset}` : ''}${b.times > 1 ? `, ${b.times} times` : ''})`;
+          : `${b.name ?? findMotif(doc, b.motif)?.name ?? b.motif} (motif ${b.motif}, mapping ${b.mapping}${b.offset ? `, offset ${b.offset}` : ''}${b.times > 1 ? `, ${b.times} times` : ''}${b.flip_horizontal ? ', flipped horizontally' : ''}${b.flip_vertical ? ', flipped vertically' : ''})`;
         const label = `${i + 1}. ${h === 1 ? `row ${row}` : `rows ${row}–${row + h - 1}`}: ${what}`;
         page.text(MARGIN, y, label, 9);
         y += 12;

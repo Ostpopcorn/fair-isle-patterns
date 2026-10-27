@@ -72,6 +72,11 @@ band's rows and its issues.
 - *Offset* slides the motif sideways: ◀ moves it one stitch left, ▶ one
   stitch right. Offsets wrap: 7 on a 5-stitch motif is the same as 2.
 - *Times* repeats the motif vertically, together with its colours.
+- *Flip*: *Horizontally* mirrors the motif left to right in this band, and
+  the offset then slides the mirrored motif. *Vertically* turns it upside
+  down, colours and all. The motif itself, and other bands using it, stay
+  as drawn. To turn the shape over but keep the colour order, give the band
+  a mapping whose rows are reversed (*Reverse* in the mapping editor).
 - *Mapping* lists the mappings of the band's motif. Choosing another motif
   keeps a mapping of the same id if it has one, or takes its first mapping.
 - *+ New motif…* at the end of the motif list gives the band a new blank

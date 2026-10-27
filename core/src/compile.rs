@@ -45,10 +45,15 @@ pub fn build(doc: &Document) -> CompiledChart {
         let Some(height) = r.band_height(doc, band) else {
             continue;
         };
-        let (motif_id, mapping_id, offset) = match &band.kind {
+        let (motif_id, mapping_id, offset, flip_h, flip_v) = match &band.kind {
             BandKind::Motif {
-                motif, mapping, offset, ..
-            } => (motif, mapping, *offset),
+                motif,
+                mapping,
+                offset,
+                flip_horizontal,
+                flip_vertical,
+                ..
+            } => (motif, mapping, *offset, *flip_horizontal, *flip_vertical),
             BandKind::Spacer { color, .. } => {
                 let Some(&color) = r.palette.get(color.as_str()) else {
                     continue;
@@ -92,11 +97,17 @@ pub fn build(doc: &Document) -> CompiledChart {
         chart.cells.reserve(height * width);
         chart.symbols.reserve(height * width);
         for j in 0..height {
-            // The mapping has one row per motif row, so both repeat together.
-            let motif_row = rows[j % h];
-            let colors = mapping[j % h];
+            // The mapping has one row per motif row, so both repeat together,
+            // and a vertical flip turns the colours over with the shape.
+            let r = if flip_v { h - 1 - j % h } else { j % h };
+            let motif_row = rows[r];
+            let colors = mapping[r];
             for c in 0..width {
-                let symbol = motif_row.get((c + shift) % w).map_or(0, |ch| ch.wrapping_sub(b'0'));
+                // A horizontal flip mirrors the motif; the offset then slides
+                // the mirrored motif.
+                let m = (c + shift) % w;
+                let m = if flip_h { w - 1 - m } else { m };
+                let symbol = motif_row.get(m).map_or(0, |ch| ch.wrapping_sub(b'0'));
                 let symbol = if symbol > 2 { 0 } else { symbol };
                 chart.symbols.push(symbol);
                 chart.cells.push(colors[symbol as usize]);

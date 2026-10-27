@@ -257,7 +257,7 @@ describe('document helpers', () => {
   it('offset 7 on a 5-wide motif behaves exactly like offset 2', () => {
     const doc = D.newPattern();
     const five: PatternDoc = { ...doc, cast_on: 10, motifs: [...doc.motifs, D.blankMotif(doc, 'five', ['10010', '01100'])] };
-    const at = (offset: number) => compile({ ...five, bands: [{ motif: 'five', mapping: 'default', offset, times: 1 }] })!.cells;
+    const at = (offset: number) => compile({ ...five, bands: [{ ...D.newMotifBand('five', 'default'), offset }] })!.cells;
     expect(at(7)).toEqual(at(2));
     expect(at(-3)).toEqual(at(2));
   });
@@ -329,7 +329,7 @@ describe('starter library', () => {
           cast_on: w * Math.max(1, Math.ceil(60 / w)),
           palette: lib.doc.palette,
           motifs: [motif],
-          bands: motif.mappings.map((p) => ({ motif: motif.id, mapping: p.id, offset: 0, times: 1 })),
+          bands: motif.mappings.map((p) => D.newMotifBand(motif.id, p.id)),
         };
         const bad = validate(doc).filter((i) => i.severity !== 'notice');
         expect(bad, motif.id).toEqual([]);

@@ -8,8 +8,9 @@
 //! - one motif row and one mapping row per line, a motif's mappings nested
 //!   after its rows;
 //! - whole numbers without a decimal point;
-//! - a band's `times` only when it is not 1; `offset` always; a spacer's
-//!   `rows` always.
+//! - a band's `times` only when it is not 1, its `flip_horizontal` and
+//!   `flip_vertical` only when true; `offset` always; a spacer's `rows`
+//!   always.
 
 use serde_json::Value;
 
@@ -218,10 +219,18 @@ pub fn write_document(doc: &Document) -> String {
                         mapping,
                         offset,
                         times,
+                        flip_horizontal,
+                        flip_vertical,
                     } => {
                         f.str("motif", motif).str("mapping", mapping).num("offset", *offset);
                         if *times != 1.0 {
                             f.num("times", *times);
+                        }
+                        if *flip_horizontal {
+                            f.raw("flip_horizontal", "true".into());
+                        }
+                        if *flip_vertical {
+                            f.raw("flip_vertical", "true".into());
                         }
                     }
                     BandKind::Spacer { color, rows } => {

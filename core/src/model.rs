@@ -135,6 +135,10 @@ pub enum BandKind {
         mapping: String,
         offset: f64,
         times: f64,
+        /// Mirror the motif left to right.
+        flip_horizontal: bool,
+        /// Turn the motif upside down, with its mapping's colours.
+        flip_vertical: bool,
     },
     Spacer {
         color: String,
@@ -287,11 +291,15 @@ impl Document {
                             mapping,
                             offset,
                             times,
+                            flip_horizontal,
+                            flip_vertical,
                         } => {
                             m.insert("motif".into(), motif.clone().into());
                             m.insert("mapping".into(), mapping.clone().into());
                             m.insert("offset".into(), num(*offset));
                             m.insert("times".into(), num(*times));
+                            m.insert("flip_horizontal".into(), (*flip_horizontal).into());
+                            m.insert("flip_vertical".into(), (*flip_vertical).into());
                         }
                         BandKind::Spacer { color, rows } => {
                             m.insert("color".into(), color.clone().into());

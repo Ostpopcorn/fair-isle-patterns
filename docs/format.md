@@ -156,7 +156,13 @@ A **motif band** knits a motif in one of its mappings:
 | `mapping` | string  | yes | Id of one of that motif's mappings |
 | `offset`  | integer | no  | Default `0`. Positive values slide the motif **left** in the chart |
 | `times`   | integer | no  | Default `1`. How many times the motif and its colours repeat vertically (≥ 1) |
+| `flip_horizontal` | boolean | no | Default `false`. Mirror the motif left to right |
+| `flip_vertical`   | boolean | no | Default `false`. Turn the motif upside down, with its mapping's colours |
 | `name`    | string  | no  | |
+
+Flipping changes only how the band knits; the motif and its mappings stay
+as drawn, and other bands using them are not affected. A flip that is not
+`true` or `false` is an error (E001).
 
 A **spacer** is plain rows in one palette colour:
 
@@ -166,7 +172,7 @@ A **spacer** is plain rows in one palette colour:
 | `rows`  | integer | no  | Default `1`. Height in chart rows (≥ 1) |
 | `name`  | string  | no  | |
 
-A spacer has no offset, and `times` is not one of its fields. Stacked
+A spacer has no offset, and `times` and the flips are not among its fields. Stacked
 spacers in different colours make stripes. A motif band whose motif is all
 `0` is still valid and knits the same way.
 
@@ -207,16 +213,20 @@ heights of the bands below it), with motif `M` of width `w` and height `h`,
 `times = t`, mapping `P` (one of `M`'s mappings) and offset `o`, the band is
 `h × t` rows tall, and for each band row `j` from `0` to `h × t − 1`:
 
-1. motif row `r = j mod h` (the motif repeats vertically);
+1. motif row `r = j mod h` (the motif repeats vertically), or
+   `r = h − 1 − (j mod h)` when `flip_vertical` is true;
 2. for each column `c` from `0` to `cast_on − 1`, motif column
-   `m = ((c + o) mod w + w) mod w` (a positive offset slides the motif left);
+   `m = ((c + o) mod w + w) mod w` (a positive offset slides the motif left),
+   then `m = w − 1 − m` when `flip_horizontal` is true;
 3. symbol `s = M.rows[r][m]`: `0`, `1` or `2`;
 4. digit `d` = character `s` of `P.rows[r]`: the background, foreground or
    accent digit of the mapping row for the same motif row;
 5. the cell takes the palette colour `P.colors[d]`.
 
 Because a mapping has exactly one row per motif row, each vertical repeat
-of a band has the same colours.
+of a band has the same colours. Both use the same row `r`, so a vertical
+flip turns the colours over with the shape; a horizontal flip mirrors the
+motif before the offset slides it.
 
 If `cast_on` is not a multiple of `w`, the last repeat is cut off at the
 right edge. This is allowed but produces W103.
@@ -363,7 +373,8 @@ minimal:
   followed by its rows one per line (see the [full example](#full-example));
 - whole numbers without a decimal point (`10`, not `10.0`);
 - defaults written out, except a band's `times`, which is omitted when it is
-  `1` (`offset` and a spacer's `rows` are always written);
+  `1`, and its `flip_horizontal` and `flip_vertical`, which are written only
+  when `true` (`offset` and a spacer's `rows` are always written);
 - no column alignment, so renaming one item never touches other lines.
 
 Reading a canonical file and writing it again reproduces it byte for byte.

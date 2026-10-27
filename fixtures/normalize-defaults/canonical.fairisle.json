@@ -22,6 +22,8 @@
     { "motif": "dot", "mapping": "ab", "offset": 0 },
     { "motif": "dot", "mapping": "ab", "offset": 0 },
     { "motif": "dot", "mapping": "ab", "offset": 0, "times": 3 },
-    { "color": "a", "rows": 1, "name": "Edge" }
+    { "color": "a", "rows": 1, "name": "Edge" },
+    { "motif": "dot", "mapping": "ab", "offset": 0, "flip_vertical": true },
+    { "motif": "dot", "mapping": "ab", "offset": 0 }
   ]
 }

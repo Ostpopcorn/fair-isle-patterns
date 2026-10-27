@@ -9,12 +9,14 @@ import {
   findMotif,
   isSpacer,
   moveItem,
+  newMotifBand,
   newSpacer,
   uniqueId,
   updateBand,
   withOptional,
 } from '../../model/doc';
-import { blank } from '../../model/motif';
+import * as MapOps from '../../model/mapping';
+import { blank, flipHorizontal, flipVertical } from '../../model/motif';
 import { store, type AppState } from '../../state/store';
 import { Badge, ColorSelect, MotifThumb, NumberField, mappingColors } from '../components/common';
 import { editMapping, editMotif } from '../navigate';
@@ -83,7 +85,7 @@ export function BandsPanel({ s }: { s: AppState }) {
       store.ui({ dialog: { kind: 'message', title: 'Nothing to add yet', body: 'A band needs a motif with a colour mapping. Create one in the Motifs tab first.' } });
       return;
     }
-    store.edit((d) => ({ ...d, bands: [...d.bands, { motif: motif.id, mapping, offset: 0, times: 1 }] }));
+    store.edit((d) => ({ ...d, bands: [...d.bands, newMotifBand(motif.id, mapping)] }));
     store.ui({ bandIndex: doc.bands.length });
   };
 
@@ -237,13 +239,18 @@ function BandCard(props: { s: AppState; band: Band; index: number; start: number
   );
 }
 
+/** The band's motif in its mapping, flipped as the band knits it. */
 function BandThumb(props: { s: AppState; band: MotifBand; motif: Motif }) {
   const { band, motif } = props;
-  const mapping = findMapping(motif, band.mapping);
+  const found = findMapping(motif, band.mapping);
+  const mapping = found && band.flip_vertical ? { ...found, rows: MapOps.reverse(found.rows) } : found;
+  let rows = motif.rows;
+  if (band.flip_horizontal) rows = flipHorizontal(rows);
+  if (band.flip_vertical) rows = flipVertical(rows);
   const w = motif.rows[0]?.length ?? 0;
   return (
     <MotifThumb
-      rows={motif.rows}
+      rows={rows}
       colors={mapping && mappingColors(mapping, props.s.doc.palette)}
       grayscale={props.s.ui.grayscale}
       maxSize={48}
@@ -366,6 +373,29 @@ function MotifFields(props: { s: AppState; band: MotifBand; index: number; motif
             <NumberField ariaLabel={`Band ${i + 1} times`} value={band.times} min={1} onChange={(v) => set({ times: v }, 'times')} />
             <button class="btn small icon" aria-label="One repeat more" onClick={() => set({ times: band.times + 1 }, 'times')}>
               +
+            </button>
+          </span>
+        </div>
+        <div class="field">
+          <span class="small muted">Flip</span>
+          <span class="row" style={{ gap: '4px' }}>
+            <button
+              class="btn small"
+              aria-pressed={band.flip_horizontal}
+              aria-label={`Flip band ${i + 1} horizontally`}
+              title="Mirror the motif left to right in this band"
+              onClick={() => set({ flip_horizontal: !band.flip_horizontal })}
+            >
+              ⇋ Horizontally
+            </button>
+            <button
+              class="btn small"
+              aria-pressed={band.flip_vertical}
+              aria-label={`Flip band ${i + 1} vertically`}
+              title="Turn the motif upside down in this band, with its colours"
+              onClick={() => set({ flip_vertical: !band.flip_vertical })}
+            >
+              ⥮ Vertically
             </button>
           </span>
         </div>

@@ -20,7 +20,7 @@
   ],
   "bands": [
     { "motif": "dot", "mapping": "ab", "offset": 0, "comment": "from another tool" },
-    { "color": "a", "rows": 1, "times": 2 }
+    { "color": "a", "rows": 1, "flip_vertical": true, "times": 2 }
   ],
   "x-editor": { "tools": ["pencil", "fill"], "zoom": 2 }
 }

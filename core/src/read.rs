@@ -121,6 +121,18 @@ impl Reader {
         }
     }
 
+    /// Optional booleans treat `null` as absent.
+    fn opt_bool(&mut self, map: &Map<String, Value>, key: &str, path: &str, loc: &Location) -> bool {
+        match map.get(key) {
+            None | Some(Value::Null) => false,
+            Some(Value::Bool(b)) => *b,
+            Some(other) => {
+                self.wrong_type(join(path, key), "true or false", other, loc);
+                false
+            }
+        }
+    }
+
     fn req_string(&mut self, map: &Map<String, Value>, key: &str, path: &str, loc: &Location) -> String {
         match self.string(map, key, path, loc) {
             Field::Ok(s) => s,
@@ -531,6 +543,8 @@ impl Reader {
                 mapping: String::new(),
                 offset: 0.0,
                 times: 1.0,
+                flip_horizontal: false,
+                flip_vertical: false,
             },
             name: None,
             extra: Extra::new(),
@@ -546,9 +560,24 @@ impl Reader {
                     mapping: self.req_string(map, "mapping", &path, &loc),
                     offset: self.opt_number(map, "offset", 0.0, &path, &loc),
                     times: self.opt_number(map, "times", 1.0, &path, &loc),
+                    flip_horizontal: self.opt_bool(map, "flip_horizontal", &path, &loc),
+                    flip_vertical: self.opt_bool(map, "flip_vertical", &path, &loc),
                 },
                 name: self.opt_string(map, "name", &path, &loc),
-                extra: self.extras(map, &["motif", "mapping", "offset", "times", "name"], &path, &loc),
+                extra: self.extras(
+                    map,
+                    &[
+                        "motif",
+                        "mapping",
+                        "offset",
+                        "times",
+                        "flip_horizontal",
+                        "flip_vertical",
+                        "name",
+                    ],
+                    &path,
+                    &loc,
+                ),
             };
         }
         if map.contains_key("motif") || map.contains_key("mapping") {
