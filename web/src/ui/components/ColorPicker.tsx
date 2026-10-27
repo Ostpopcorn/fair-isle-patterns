@@ -3,7 +3,7 @@
 // and HSL fields. The value is a #rrggbb hex.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { hslToRgb, lightness, parseHex, rgbToHsl, toHex, type HSL, type RGB } from '../../model/color';
+import { hslToRgb, lightness, normalizeHex, parseHex, rgbToHsl, toHex, type HSL, type RGB } from '../../model/color';
 import { NumberField } from './common';
 
 export interface Preset {
@@ -145,6 +145,7 @@ export function ColorPicker(props: {
             />
           ))}
         </div>
+        <HexField value={hex} onChange={(next) => set(hslOf(next, hsl))} onCommit={props.onCommit} />
         <span class="small muted" title="CIELAB L*, the lightness the contrast check compares">
           Lightness L* {Math.round(lightness(rgb))}
         </span>
@@ -188,5 +189,41 @@ export function ColorPicker(props: {
         </button>
       </div>
     </div>
+  );
+}
+
+/** The colour as #rrggbb. It changes the colour once it holds six hex
+ * digits (the # is optional) and shows the colour again when left. */
+function HexField(props: { value: string; onChange: (hex: string) => void; onCommit: () => void }) {
+  const [text, setText] = useState(props.value);
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current || normalizeHex(text) !== props.value) setText(props.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.value]);
+  return (
+    <label class="field">
+      <span>Hex</span>
+      <input
+        type="text"
+        class="mono"
+        value={text}
+        spellcheck={false}
+        autocomplete="off"
+        aria-invalid={normalizeHex(text) ? undefined : 'true'}
+        onFocus={() => (focused.current = true)}
+        onBlur={() => {
+          focused.current = false;
+          setText(props.value);
+          props.onCommit();
+        }}
+        onInput={(e) => {
+          const raw = (e.currentTarget as HTMLInputElement).value;
+          setText(raw);
+          const hex = normalizeHex(raw);
+          if (hex) props.onChange(hex);
+        }}
+      />
+    </label>
   );
 }

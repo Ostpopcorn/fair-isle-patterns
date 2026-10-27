@@ -28,6 +28,12 @@ export function grayForLightness(l: number): RGB {
   return [v, v, v];
 }
 
+/** A typed colour as #rrggbb in lower case, or null. The # is optional. */
+export function normalizeHex(text: string): string | null {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(text.trim());
+  return m ? `#${m[1].toLowerCase()}` : null;
+}
+
 export function toHex([r, g, b]: RGB): string {
   return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 }

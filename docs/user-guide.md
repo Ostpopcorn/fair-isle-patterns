@@ -55,9 +55,9 @@ swatch to open its colour picker:
   is what you get.
 - The **lightness** slider runs from black through the colour to white.
 - **Presets** are the yarn shades of the starter library's neutral palette.
-- **R, G, B** (0–255) and **H** (0–360°), **S** and **L** (0–100 %) can be
-  typed. A gray keeps its hue, so raising the saturation again brings the
-  hue back.
+- **Hex** (with or without the #), **R, G, B** (0–255) and **H** (0–360°),
+  **S** and **L** (0–100 %) can be typed. A gray keeps its hue, so raising
+  the saturation again brings the hue back.
 - *Lightness L\** is the lightness the contrast check compares.
 
 Every drag, preset or typed value is one undo step. Add a name and the yarn

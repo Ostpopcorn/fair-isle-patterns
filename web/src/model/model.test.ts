@@ -3,7 +3,7 @@ import { compile, parse, validate } from '../core';
 import type { LibraryDoc, Mapping, PatternDoc } from '../core/types';
 import { fixtureText, loadCore } from '../core/testing';
 import { builtinLibraries } from '../library';
-import { grayForLightness, hslToRgb, lightness, parseHex, rgbToHsl, toHex, type RGB } from './color';
+import { grayForLightness, hslToRgb, lightness, normalizeHex, parseHex, rgbToHsl, toHex, type RGB } from './color';
 import * as D from './doc';
 import { importFromLibrary } from './library';
 import * as Map from './mapping';
@@ -344,6 +344,10 @@ describe('colour', () => {
     expect(lightness(parseHex('#efe6d2')!)).toBeCloseTo(91.5, 0);
     for (const l of [0, 10, 50, 91.5, 100]) expect(lightness(grayForLightness(l))).toBeCloseTo(l, 0);
     expect(parseHex('#12345')).toBeNull();
+    expect(normalizeHex(' #A4452C ')).toBe('#a4452c');
+    expect(normalizeHex('a4452c')).toBe('#a4452c');
+    expect(normalizeHex('#a44')).toBeNull();
+    expect(normalizeHex('#a4452g')).toBeNull();
   });
 
   it('HSL', () => {
