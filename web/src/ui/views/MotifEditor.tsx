@@ -309,10 +309,13 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
               Paste
             </button>
           </span>
-          <span class="row small">
-            <NumberField ariaLabel="Motif width" value={w} min={1} max={200} width="64px" onChange={(v) => resize(v, h)} onBlur={motifCommands.endResize} />
+          <span class="row small" role="group" aria-label="Motif size">
+            <span class="muted" aria-hidden="true">
+              Size
+            </span>
+            <SizeStepper dimension="width" value={w} onChange={(v) => resize(v, h)} />
             ×
-            <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(w, v)} onBlur={motifCommands.endResize} />
+            <SizeStepper dimension="height" value={h} onChange={(v) => resize(w, v)} />
           </span>
         </div>
         <div class="row">
@@ -347,6 +350,28 @@ function resize(w: number, h: number): void {
   if (!Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > 200 || h > 200) return;
   motifCommands.resize(w, h, `resize-${store.get().ui.motifId}`);
   store.ui({ selection: null });
+}
+
+/** A motif size field with − / + buttons. Typing in the field resizes from
+ * the motif as it was until the field is left; each button press resizes the
+ * motif as it is now, as its own undo step. */
+function SizeStepper({ dimension, value, onChange }: { dimension: 'width' | 'height'; value: number; onChange: (value: number) => void }) {
+  const [fewer, more] = dimension === 'width' ? ['Remove the right column', 'Add a column on the right'] : ['Remove the top row', 'Add a row at the top'];
+  const step = (by: number) => {
+    motifCommands.endResize();
+    onChange(value + by);
+  };
+  return (
+    <span class="stepper">
+      <button class="btn small icon" aria-label={fewer} title={fewer} disabled={value <= 1} onClick={() => step(-1)}>
+        −
+      </button>
+      <NumberField ariaLabel={`Motif ${dimension}`} value={value} min={1} max={200} onChange={onChange} onBlur={motifCommands.endResize} />
+      <button class="btn small icon" aria-label={more} title={more} disabled={value >= 200} onClick={() => step(1)}>
+        +
+      </button>
+    </span>
+  );
 }
 
 function TilePreview({ s, motif, colors, colouring }: { s: AppState; motif: Motif; colors: MotifColors; colouring: string | null }) {
