@@ -1,5 +1,6 @@
 // Commands on the motif being edited, shared by the toolbar and shortcuts.
 
+import type { Motif } from '../../core/types';
 import { findMotif, updateMotif, withMappingRows } from '../../model/doc';
 import * as MapOps from '../../model/mapping';
 import * as M from '../../model/motif';
@@ -34,19 +35,39 @@ function setRows(rows: string[], coalesce?: string, follow?: (rows: string[]) =>
   );
 }
 
+/** The motif as it was before a run of resizes, and the motif the last of
+ * them made. Each resize in a run starts from `from`, so typing 12 → 1 → 14
+ * in a size field gives the 12-wide motif two more columns instead of
+ * keeping only its first. Any other change to the motif, or endResize,
+ * starts a new run. */
+let resizeRun: { from: Motif; last: Motif } | null = null;
+
 /** Resizes the motif. Rows are added or removed at the top, and every
  * mapping gains or loses the same rows (new rows copy its top row). */
 function resize(w: number, h: number, coalesce?: string): void {
-  const id = store.get().ui.motifId;
-  if (!id) return;
-  store.edit((doc) => updateMotif(doc, id, (m) => withMappingRows({ ...m, rows: M.resize(m.rows, w, h) }, (rows) => MapOps.fitRows(rows, h))), {
+  const s = store.get();
+  const motif = findMotif(s.doc, s.ui.motifId);
+  if (!motif) return;
+  const run = resizeRun?.last === motif ? resizeRun : { from: motif, last: motif };
+  const from = run.from;
+  store.edit((doc) => updateMotif(doc, motif.id, () => withMappingRows({ ...from, rows: M.resize(from.rows, w, h) }, (rows) => MapOps.fitRows(rows, h))), {
     coalesce,
   });
+  run.last = findMotif(store.get().doc, motif.id) ?? motif;
+  resizeRun = run;
+}
+
+/** Ends the run of resizes, so the next one starts from the motif as it is,
+ * in a new undo step. */
+function endResize(): void {
+  resizeRun = null;
+  store.breakCoalescing();
 }
 
 export const motifCommands = {
   setRows,
   resize,
+  endResize,
 
   transform(kind: Transform): void {
     const c = current();

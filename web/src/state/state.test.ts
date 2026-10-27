@@ -115,6 +115,47 @@ describe('motif commands', () => {
     expect(rowsOf()).toEqual(['01', '01', '01', '03']);
     expect(validate(store.get().doc).filter((i) => i.severity === 'error')).toEqual([]);
   });
+
+  it('typing a size through a smaller value keeps the motif', async () => {
+    const { store } = await import('./store');
+    const { motifCommands } = await import('../ui/views/motifCommands');
+    const motif = () => findMotif(store.get().doc, 'peerie-x')!;
+    store.load(hat());
+    store.ui({ motifId: 'peerie-x' });
+    const rows = motif().rows;
+    const colours = motif().mappings[0].rows;
+
+    // 6 → 1 → 14, as when typing 14 over 6: the 6 columns stay.
+    motifCommands.resize(1, 5, 'resize');
+    expect(motif().rows).toEqual(['1', '0', '0', '0', '1']);
+    motifCommands.resize(14, 5, 'resize');
+    expect(motif().rows).toEqual(rows.map((r) => r + '0'.repeat(8)));
+    // The same for the height, and the mapping rows come back with it.
+    motifCommands.resize(14, 1, 'resize');
+    motifCommands.resize(14, 5, 'resize');
+    expect(motif().rows).toEqual(rows.map((r) => r + '0'.repeat(8)));
+    expect(motif().mappings[0].rows).toEqual(colours);
+    // One undo step back to the original.
+    store.undo();
+    expect(motif().rows).toEqual(rows);
+
+    // Leaving the field ends the run: shrinking is then for real, and the
+    // next resize is its own undo step.
+    motifCommands.resize(2, 5, 'resize');
+    motifCommands.endResize();
+    motifCommands.resize(6, 5, 'resize');
+    expect(motif().rows).toEqual(rows.map((r) => r.slice(0, 2) + '0000'));
+    store.undo();
+    expect(motif().rows).toEqual(rows.map((r) => r.slice(0, 2)));
+
+    // So does any other change to the motif in between.
+    store.load(hat());
+    store.ui({ motifId: 'peerie-x' });
+    motifCommands.resize(2, 5, 'resize');
+    motifCommands.transform('flipH');
+    motifCommands.resize(6, 5, 'resize');
+    expect(motif().rows).toEqual(rows.map((r) => [...r.slice(0, 2)].reverse().join('') + '0000'));
+  });
 });
 
 describe('old files', () => {

@@ -36,6 +36,8 @@ export function NumberField(props: {
   label?: string;
   value: number;
   onChange: (value: number) => void;
+  /** Called when the field loses focus. */
+  onBlur?: () => void;
   min?: number;
   max?: number;
   step?: number;
@@ -63,6 +65,7 @@ export function NumberField(props: {
       onBlur={() => {
         focused.current = false;
         setText(String(props.value));
+        props.onBlur?.();
       }}
       onInput={(e) => {
         const raw = (e.currentTarget as HTMLInputElement).value;

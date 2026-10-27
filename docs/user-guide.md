@@ -116,7 +116,9 @@ each have a mapping called `default`.
   is clipped.
 - **Size**: change the width and height; cells are added or removed at the
   top and right edges. Rows added at the top copy the top row of every
-  mapping.
+  mapping. Until you leave the field, each size is applied to the motif as
+  it was, so typing 14 over 12 (passing 1 on the way) keeps all 12
+  columns. Leaving the field ends the undo step.
 - **Colours** (under the tiled preview): the motif is shown in black and
   white with a deep red accent unless you pick one of its mappings. Black
   and white is only a way of looking at the motif; it is not saved in the

@@ -310,9 +310,9 @@ function Editor({ s, motif }: { s: AppState; motif: Motif }) {
             </button>
           </span>
           <span class="row small">
-            <NumberField ariaLabel="Motif width" value={w} min={1} max={200} width="64px" onChange={(v) => resize(v, h)} />
+            <NumberField ariaLabel="Motif width" value={w} min={1} max={200} width="64px" onChange={(v) => resize(v, h)} onBlur={motifCommands.endResize} />
             ×
-            <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(w, v)} />
+            <NumberField ariaLabel="Motif height" value={h} min={1} max={200} width="64px" onChange={(v) => resize(w, v)} onBlur={motifCommands.endResize} />
           </span>
         </div>
         <div class="row">
